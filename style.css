@@ -1,0 +1,274 @@
+﻿:root {
+  --bg: #f6f7fb;
+  --panel: #ffffff;
+  --text: #222;
+  --muted: #666;
+  --brand: #2c7be5;
+  --accent: #0ca678;
+  --warn: #d9480f;
+  --border: #e6e8ef;
+  --shadow: 0 10px 30px rgba(0,0,0,.12);
+}
+* { box-sizing: border-box; }
+body {
+  margin:0; background:var(--bg); color:var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", Arial, sans-serif;
+}
+header {
+  display:flex; align-items:center; gap:16px;
+  padding:12px 16px; background:var(--panel); border-bottom:1px solid var(--border);
+  position: sticky; top:0; z-index:5;
+}
+header h1 { font-size:18px; margin:0; }
+.row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+select, input[type="text"], input[type="number"] {
+  border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:14px; background:#fff; color:#222;
+}
+button {
+  border:1px solid var(--border); background:#fff; color:#222;
+  border-radius:10px; padding:8px 12px; cursor:pointer; font-size:14px;
+}
+button.primary { background:var(--brand); color:#fff; border-color:transparent; }
+button.danger { background:#fff1f0; border-color:#ffd8cd; color:#b02a1a; }
+button:disabled { opacity:0.6; cursor:not-allowed; }
+
+main { padding:16px; }
+.canvas-wrap {
+  background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden;
+}
+.canvas-toolbar {
+  display:flex; gap:8px; align-items:center; padding:8px; border-bottom:1px solid var(--border); background:#fafbff;
+}
+.badge { font-size:12px; padding:2px 6px; background:#eef5ff; border:1px solid #bcd4ff; border-radius:999px; }
+.spacer { flex:1; }
+.hint { color:var(--muted); font-size:12px; }
+canvas { width:100%; height:calc(100vh - 180px); display:block; background:#fff; }
+
+/* ===== フローティング・ウインドウ（設定／再生） ===== */
+.window {
+  position:fixed; top:90px; left:16px; z-index:10;
+  width:360px; max-width:92vw; background:#fff; border:1px solid var(--border); border-radius:12px;
+  box-shadow: var(--shadow);
+}
+.window.hidden { display:none; }
+.window-header {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 12px; border-bottom:1px solid var(--border); background:#fafbff;
+  cursor:move; user-select:none;
+}
+.window-title { font-weight:700; font-size:14px; }
+.window-actions { margin-left:auto; display:flex; gap:6px; }
+.window-body { padding:12px; max-height:72vh; overflow:auto; }
+
+ /* タブ（設定ウインドウ内） */
+.tabs { display:flex; border-bottom:1px solid var(--border); background:#fafbff; position:sticky; top:0; z-index:1; }
+.tabs button {
+  flex:1; padding:10px; border:none; background:transparent; font-weight:600;
+  border-bottom:2px solid transparent; cursor:pointer;
+}
+.tabs button.active { color:#1a56db; border-bottom-color:#1a56db; background:#fff; }
+.panel { padding:12px 0; display:none; }
+.panel.active { display:block; }
+.group { border:1px dashed var(--border); border-radius:10px; padding:10px; margin-bottom:12px; }
+.group h3 { margin:0 0 8px; font-size:14px; color:#333; }
+label { font-size:13px; color:#444; display:block; margin:6px 0 4px; }
+.inline { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th, td { border:1px solid var(--border); padding:6px 8px; text-align:left; }
+th { background:#fafbff; }
+td[contenteditable="true"] { background:#fff; min-width: 40px; }
+
+/* 目印カラー・パレット */
+.palette { display:flex; gap:8px; flex-wrap:wrap; }
+.palette .pchip {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 8px; border:1px solid var(--border); border-radius:999px; cursor:pointer; user-select:none; background:#fff; font-size:12px;
+}
+.palette .pchip.active { outline:2px solid #a3c0ff; }
+.palette .swatch {
+  width:14px; height:14px; border-radius:50%;
+  border:2px solid transparent;
+}
+.palette .swatch.white { background:#ffffff; border-color:#000000; }
+
+/* 再生ウインドウ（小型） */
+.controls-mini { width:340px; }
+.controls-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.controls-row input[type="number"]{ width:88px; }
+.controls-row .grow { flex:1; }
+
+ /* 右下のガイド */
+.corner-hint {
+  position:fixed; right:12px; bottom:8px; z-index:1; font-size:12px; color:#888;
+  background:rgba(255,255,255,.7); padding:2px 6px; border-radius:6px; border:1px solid #eee;
+}
+
+/* 簡易タグ見た目 */
+.chips .chip{ display:inline-block; padding:6px 10px; border:1px solid var(--border); border-radius:999px; cursor:pointer; margin-right:6px; }
+.chips .chip.active{ background:#e7f0ff; border-color:#bcd4ff; }
+
+/* ===== モード切替用 UI 追加 ===== */
+
+/* 歯車アイコン */
+.gear {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  font-size: 28px;
+  cursor: pointer;
+  z-index: 30;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  padding: 6px 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  user-select: none;
+}
+.gear:hover {
+  background: #f0f0f0;
+}
+
+/* ログインダイアログ */
+.dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  z-index: 40;
+  min-width: 260px;
+}
+.dialog.hidden {
+  display: none;
+}
+.dialog h3 {
+  margin-top: 0;
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+.dialog label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+.dialog input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-top: 2px;
+  font-size: 14px;
+}
+
+/* 管理者モードウインドウ */
+#adminWin {
+  z-index: 35;
+}
+#adminWin table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+#adminWin th, #adminWin td {
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  text-align: left;
+}
+#adminWin th {
+  background: #fafbff;
+}
+
+.edit-only {
+  display: inline-block; /* 通常時は表示 */
+}
+.edit-hidden {
+  display: none !important; /* 閲覧モードのときに付与 */
+}
+
+#controlsWin {
+  background-color: #e6f7ff; /* 薄い水色 */
+  border: 2px solid #3399cc; /* 枠も色変更 */
+}
+
+#controlsWin .window-header {
+  background-color: #3399cc; /* 濃いめの青 */
+  color: #fff;              /* 文字は白 */
+}
+
+#controlsWin .window-title {
+  font-weight: bold;
+}
+
+/* ログインダイアログ全体 */
+#loginDialog {
+  background-color: #fff0f5; /* 薄いピンク（ラベンダーブラッシュ系） */
+  border: 2px solid #e5739d; /* ピンク寄りの枠線 */
+}
+
+/* ヘッダー部分 */
+#loginDialog .window-header {
+  background-color: #e5739d; /* ピンク系 */
+  color: #fff;
+}
+
+/* 入力欄 */
+#loginDialog input {
+  border: 1px solid #e5739d; /* ピンクの枠 */
+  padding: 6px;
+}
+
+/* ボタン */
+#loginDialog button {
+  background-color: #e5739d; /* ピンク系 */
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#loginDialog button:hover {
+  background-color: #d85a8a; /* 濃いめのピンクに変化 */
+}
+
+
+/* 設定ウインドウ全体 */
+#settingsWin {
+  background-color: #f6fff0; /* 薄い黄緑 */
+  border: 2px solid #66cc66;
+}
+
+/* 設定ウインドウのヘッダー */
+#settingsWin .window-header {
+  background-color: #66cc66; /* 濃いめの黄緑 */
+  color: #fff;              /* タイトル文字を白に */
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.form-row label {
+  width: 120px;   /* ラベル幅をそろえる */
+  text-align: right;
+  margin-right: 8px;
+}
+
+#adminWin {
+  background-color: #fffaf0; /* クリーム系で差別化 */
+  border: 2px solid #666;
+}
+
+#adminWin .window-header {
+  background-color: #6c63ff; /* 紫系 */
+  color: #fff;
+}
+
+

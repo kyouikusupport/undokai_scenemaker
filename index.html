@@ -1,0 +1,278 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>運動会シーンメーカー（学年別・共通グランド・アニメーション）</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>運動会シーンメーカー</h1>
+  <div class="row">
+    <label class="edit-only">学年</label>
+    <select id="gradeSelect" class="edit-only"></select>
+    <button id="addGradeBtn" class="edit-only">＋</button>
+    <button id="renameGradeBtn" class="edit-only">名称変更</button>
+    <button id="deleteGradeBtn" class="danger edit-only">🗑</button>
+  </div>
+  <div class="spacer"></div>
+  <div class="row">
+    <button id="saveBtn" class="edit-only">保存</button>
+    <button id="exportBtn" class="edit-only">エクスポート</button>
+    <input id="importFile" type="file" accept="application/json" style="display:none">
+    <button id="importBtn" class="edit-only">インポート</button>
+  </div>
+</header>
+
+<main>
+  <div id="canvasWrap" class="canvas-wrap">
+    <div class="canvas-toolbar">
+      <span class="spacer"></span>
+    </div>
+    <canvas id="canvas" width="1400" height="800"></canvas>
+  </div>
+</main>
+
+<div class="corner-hint">Ctrl+ホイール：ズーム / 右ドラッグ：パン / 円半径：円選択中に通常ホイール</div>
+
+<!-- ===== 設定ウインドウ ===== -->
+<div id="settingsWin" class="window" style="top:90px; left:16px;">
+  <div class="window-header" id="settingsDrag">
+    <span class="window-title">設定</span>
+    <div class="window-actions">
+      <button id="settingsCloseBtn">再生ウインドウ</button>
+    </div>
+  </div>
+  <div class="window-body">
+    <div class="tabs">
+      <button class="tab active" data-tab="field">グランド</button>
+      <button class="tab" data-tab="roster">名簿</button>
+      <button class="tab" data-tab="scenes">シーン</button>
+    </div>
+
+    <!-- グランド（共通設定） -->
+    <section id="panel-field" class="panel active">
+      <div class="group">
+        <h3>グランド（全学年で共通）</h3>
+        <div class="inline">
+          <label>縦横比（高さ/幅）</label>
+          <input id="ratioH" type="number" step="0.01" value="0.5" style="width:90px">
+          <span class="tiny">範囲：0.10〜1.50（1.00で正方形）</span>
+        </div>
+        <div class="inline">
+          <label><input id="showSplit" type="checkbox" checked> 分割線を表示</label>
+        </div>
+        <div class="inline">
+          <label>縦の分割線（本数）</label>
+          <input id="splitV" type="number" min="0" max="11" step="1" value="2" style="width:90px">
+          <label>横の分割線（本数）</label>
+          <input id="splitH" type="number" min="0" max="11" step="1" value="2" style="width:90px">
+        </div>
+        <div class="tiny">※「本数」は内側に引く線の数（外枠は含まず）。</div>
+      </div>
+
+      <div class="group">
+        <h3>グランド編集モード</h3>
+        <div class="chips" id="editModeChips">
+          <span class="chip active" data-mode="none">グランド描写</span>
+          <span class="chip" data-mode="markers">目印のポイント</span>
+          <span class="chip" data-mode="circles">内側の円</span>
+        </div>
+        <div class="tiny" style="margin-top:6px;">
+          ・目印：クリックで追加／ドラッグ移動／Delete削除／色は下の6色から選択<br>
+          ・円：個数と色を指定。ドラッグ／ホイールで半径（選択中）／数値適用
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>目印のポイント</h3>
+        <div class="inline" style="gap:12px;">
+          <div class="inline">
+            <label>色（選択式）</label>
+            <div id="markerPalette" class="palette"></div>
+          </div>
+          <div class="inline">
+            <label><input id="snapEnabled" type="checkbox" checked> グリッドにスナップ</label>
+            <label>しきい値(px)</label>
+            <input id="snapPx" type="number" min="4" max="40" step="1" value="18" style="width:80px">
+          </div>
+          <button id="clearMarkersBtn" class="danger">全部消す</button>
+        </div>
+        <div class="tiny">※グリッド＝分割線の交点／各線の中点／各マス中心（外枠も含む）</div>
+      </div>
+
+      <div class="group">
+        <h3>内側の円</h3>
+        <div class="inline">
+          <label>円の個数</label>
+          <input id="circleCount" type="number" min="0" max="12" step="1" value="3" style="width:90px">
+          <label>色</label>
+          <select id="circleColorSel" style="width:110px">
+            <option value="#000000">黒</option>
+            <option value="#ff0000">赤</option>
+            <option value="#00aa00">緑</option>
+            <option value="#0066ff">青</option>
+          </select>
+        </div>
+        <div class="inline" style="margin-top:6px;">
+          <label>X(px)</label><input id="circleX" type="number" step="1" style="width:90px">
+          <label>Y(px)</label><input id="circleY" type="number" step="1" style="width:90px">
+          <label>半径(px)</label><input id="circleR" type="number" step="1" min="4" style="width:90px">
+          <button id="circleApplyBtn">適用</button>
+          <button id="resetCirclesBtn">初期配置</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 名簿 -->
+    <section id="panel-roster" class="panel">
+      <div class="group">
+        <h3>名簿（番号・氏名・色）</h3>
+        <div class="tiny">Excel/スプレッドシートから <b>番号[TAB]氏名</b> で複数行貼り付け可（色は後で選択）</div>
+        <table id="rosterTable">
+          <thead>
+            <tr>
+              <th style="width:24px;">No</th>
+              <th>氏名</th>
+              <th style="width:45px;">色</th>
+              <th style="width:24px;">操作</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="inline" style="margin-top:8px;">
+          <button id="addRowBtn">行を追加</button>
+          <button id="clearRosterBtn" class="danger">全削除</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- シーン -->
+    <section id="panel-scenes" class="panel">
+      <div class="group">
+        <h3>シーン一覧</h3>
+        <div class="inline" style="margin-bottom:8px;">
+          <button id="addSceneBtn" class="primary">現在の配置をシーン追加</button>
+          <button id="dupSceneBtn">複製</button>
+          <button id="delSceneBtn" class="danger">削除</button>
+        </div>
+        <table id="sceneTable">
+          <thead><tr><th style="width:56px;">#</th><th>名称</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="tiny" style="margin-top:6px;">行名はクリックで編集できます。選択行が現在のシーンです。</div>
+      </div>
+
+      <div class="group">
+        <h3>子どもポイント</h3>
+        <div class="inline">
+          <label><input id="studentEditToggle" type="checkbox"> 子ども配置モード（ドラッグ可）</label>
+          <span class="tiny">※オンの間、キャンバス上で児童をドラッグ移動できます。</span>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>再生（詳細設定）</h3>
+        <div class="form-row">
+          <label>1区間の秒数</label>
+          <input id="durationSec" type="number" min="0.1" step="0.1" value="2.0" style="width:90px">
+        </div>
+        <div class="form-row">
+          <label>停止時間（秒）</label>
+          <input id="holdSec" type="number" min="0" step="0.1" value="0.4" style="width:90px">
+        </div>
+        <div class="inline" style="margin-top:8px;">
+          <button id="playBtn" class="primary">▶ 再生</button>
+          <button id="stopBtn">■ 停止</button>
+          <button id="prevBtn">◀ 前</button>
+          <button id="nextBtn">次 ▶</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ===== 再生ウインドウ（コンパクト） ===== -->
+<div id="controlsWin" class="window controls-mini hidden" style="top:90px; left:16px;">
+  <div class="window-header" id="controlsDrag">
+    <span class="window-title">再生</span>
+    <div class="window-actions">
+      <button id="openSettingsBtn" class="edit-only">⚙ 設定</button>
+    </div>
+  </div>
+  <div class="window-body">
+    <div class="controls-row">
+      <button id="playBtnMini" class="primary">▶ 再生</button>
+      <button id="stopBtnMini">■ 停止</button>
+      <button id="prevBtnMini">◀ 前</button>
+      <button id="nextBtnMini">次 ▶</button>
+    </div>
+    <div class="group" style="margin:0 0 10px 0;">
+      <div class="controls-row">
+        <span class="grow"></span>
+        <span style="margin-right:6px;">縮尺</span>
+        <button id="zoomOutBtn">−</button>
+        <button id="zoomResetBtn">100%</button>
+        <button id="zoomInBtn">＋</button>
+        <button id="zoomFitBtn">全体</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- コンテキストメニュー -->
+<div id="contextMenu"
+     style="position:absolute; display:none; background:#fff; border:1px solid #ccc; border-radius:6px; z-index:50;">
+  <div class="menu-item" data-action="distribute"
+       style="padding:6px 12px; cursor:pointer;">等間隔に配置</div>
+  <div class="menu-item" data-action="rotate"
+       style="padding:6px 12px; cursor:pointer;">回転</div>
+</div>
+
+<!-- 歯車アイコン（閲覧モードで表示 → ログイン用） -->
+<div id="gearIcon" class="gear">⚙</div>
+
+<!-- ログインダイアログ -->
+<div id="loginDialog" class="dialog hidden">
+  <h3>ログイン</h3>
+  <label>学校コード: <input id="schoolCode"></label>
+  <label>パスワード: <input id="password" type="password"></label>
+  <div style="margin-top:10px;">
+    <button id="loginBtn">ログイン</button>
+    <button onclick="document.getElementById('loginDialog').classList.add('hidden')">キャンセル</button>
+  </div>
+</div>
+
+<!-- ===== 管理者ウインドウ ===== -->
+<div id="adminWin" class="window hidden" style="top:100px; left:100px; width:800px;">
+  <div class="window-header" id="adminDrag">
+    <span class="window-title">管理者モード：学校一覧</span>
+
+  </div>
+  <div class="window-body">
+    <div class="group">
+      <h3>学校リスト</h3>
+      <table id="schoolTable">
+        <thead>
+          <tr>
+            <th>学校名</th>
+            <th>学校コード</th>
+            <th>パスワード</th>
+            <th style="width:40px;">操作</th> 
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div style="margin-top:10px;">
+        <button id="addSchoolBtn">＋ 学校を追加</button>
+        <button id="saveSchoolsBtn" class="primary">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<script src="app.js"></script>
+</body>
+</html>
