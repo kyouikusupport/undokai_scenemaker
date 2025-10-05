@@ -1698,7 +1698,9 @@ function updateModeUI() {
   }
 }
 
-// 学校コードとパスワードの検証（GAS連携）
+// =============================
+// 学校ログイン認証（GAS連携）
+// =============================
 async function validateSchool(code, pass) {
   const payload = {
     action: "auth",
@@ -1720,6 +1722,34 @@ async function validateSchool(code, pass) {
       currentMode = MODES.ADMIN;
     } else {
       currentMode = MODES.EDIT;
+
+      // ★ ここから追加部分（ログイン後の自動読み込み）===================
+      const loadPayload = {
+        action: "load",
+        schoolId: code,
+        grade: "１年" // ← 学年名が別にある場合はここを currentGrade()?.name に
+      };
+      try {
+        const res2 = await fetch(GAS_URL, {
+          method: "POST",
+          body: JSON.stringify(loadPayload),
+          headers: { "Content-Type": "text/plain" }
+        });
+        const json2 = await res2.json();
+
+        // 読み込み成功時
+        if (json2 && json2.field && json2.grades) {
+          state.field = json2.field;
+          state.grades = json2.grades;
+          flash("保存されているデータを読み込みました");
+        } else {
+          flash("新しいデータを作成します");
+        }
+        refreshAllUI();
+      } catch (err) {
+        alert("データ読み込みエラー: " + err.message);
+      }
+      // ★ ここまで追加部分 ===========================================
     }
     updateModeUI();
     return true;
@@ -1892,6 +1922,7 @@ document.getElementById("copyPublicUrl").addEventListener("click", async () => {
     alert("クリップボードにコピーできませんでした: " + err.message);
   }
 });
+
 
 
 
