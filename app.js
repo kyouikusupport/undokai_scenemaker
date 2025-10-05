@@ -13,11 +13,11 @@ function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 function lerp(a,b,t){ return a + (b-a)*t; }
 
 const MARKER_COLORS = [
-  {name:"赤",     value:"#ff0000"},
-  {name:"青",     value:"#0066ff"},
-  {name:"緑",     value:"#00aa00"},
-  {name:"黄",   value:"#ffd43b"},
-  {name:"橙",value:"#ffa500"},
+  {name:"赤", value:"#ff0000"},
+  {name:"青", value:"#0066ff"},
+  {name:"緑", value:"#00aa00"},
+  {name:"黄", value:"#ffd43b"},
+  {name:"橙", value:"#ffa500"},
   {name:"白", value:"#ffffff"},
 ];
 
@@ -1652,7 +1652,7 @@ async function validateSchool(code, pass) {
   const res = await fetch(GAS_URL, {
     method: "POST",
     body: JSON.stringify(payload),
-    headers: { "Content-Type": "application/json" }
+    headers: { "Content-Type": "text/plain" }
   });
 
   const json = await res.json();
@@ -1773,5 +1773,6 @@ el.saveSchoolsBtn.addEventListener("click", () => {
   localStorage.setItem("undokai_schools", JSON.stringify(state.schools));
   alert("学校リストを保存しました");
 });
+
 
 
