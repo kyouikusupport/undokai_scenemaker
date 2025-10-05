@@ -509,12 +509,18 @@ function drawSplits(fr){
 /** =========================
  * 現在ターゲット
  * ========================= */
-function currentGrade(){ return state.grades[state.currentGradeIndex]; }
-function currentPositions(){
-  const g = currentGrade();
-  if(state.currentSceneIndex>=0) return g.scenes[state.currentSceneIndex].positions;
-  return g.workingPositions;
+function currentGrade() {
+  if (!state.grades.length) {
+    // ★ 学年が無いときはデフォルトを自動作成
+    const g = defaultGrade("新しい学年");
+    g.roster.push({id: makeId(), no: 1, name: "児童1", color: "#0066ff"});
+    g.workingPositions[g.roster[0].id] = defaultPosition(0, 1);
+    state.grades.push(g);
+    state.currentGradeIndex = 0;
+  }
+  return state.grades[state.currentGradeIndex];
 }
+
 
 /** =========================
  * 名簿UI：色列つき
@@ -1576,7 +1582,6 @@ if (savedSchools) {
 /** =========================
  * 起動
  * ========================= */
-loadAll();
 refreshAllUI();
 fitCanvas();
 flash("準備OK");
@@ -1811,4 +1816,5 @@ el.saveSchoolsBtn.addEventListener("click", () => {
 
 // ★ 管理者データをGASからロード
 loadSchools();
+
 
