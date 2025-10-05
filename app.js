@@ -108,34 +108,36 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycby-ssxsEpTUFO7u7NE2ON8O
 /** =========================
  * ストレージ
  * ========================= */
-function saveAll(){
-  const payload = { field: state.field, grades: state.grades };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  flash("保存しました");
-}
-function loadAll(){
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if(raw){
-    try{
-      const obj = JSON.parse(raw);
-      if(obj && obj.field && Array.isArray(obj.grades)){
-        state.field = Object.assign(defaultField(), obj.field);
-        if(!state.field.snap) state.field.snap = {enabled:true, px:18};
-        state.grades = obj.grades;
-        // 既存データで roster.color が未設定なら青で初期化
-        state.grades.forEach(g=>g.roster.forEach(s=>{ if(!s.color) s.color="#0066ff"; }));
-        return;
-      }
-    }catch{}
+async function saveAll() {
+  // 学校コードと学年名を含める（学校IDと学年単位で保存）
+  const payload = {
+    action: "save",
+    schoolId: state.currentSchoolCode || "unknown",
+    grade: currentGrade()?.name || "未設定",
+    data: {
+      field: state.field,
+      grades: state.grades
+    }
+  };
+
+  try {
+    const res = await fetch(GAS_URL, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "text/plain" } // ← application/json ではなく text/plain
+    });
+
+    const json = await res.json();
+    if (json.status === "ok") {
+      flash("スプレッドシートに保存しました");
+    } else {
+      alert("保存に失敗しました: " + json.status);
+    }
+  } catch (err) {
+    alert("通信エラー: " + err.message);
   }
-  // 初期データ
-  const g = defaultGrade("6年A組");
-  for(let i=1;i<=10;i++){
-    g.roster.push({id:makeId(), no:i, name:`児童${i}`, color:"#0066ff"});
-  }
-  g.roster.forEach((s,idx)=>g.workingPositions[s.id] = defaultPosition(idx, g.roster.length));
-  state.grades = [g];
 }
+
 
 /** =========================
  * 要素参照
@@ -1646,6 +1648,7 @@ async function validateSchool(code, pass) {
   const json = await res.json();
   if (json.status === "ok") {
     state.currentSchoolName = json.name; // ここに学校名を保持
+    state.currentSchoolCode = code;   // ★ 学校コードを保持（save時に使用）
     if (code === "admin") {
       currentMode = MODES.ADMIN;
     } else {
@@ -1808,3 +1811,4 @@ el.saveSchoolsBtn.addEventListener("click", () => {
 
 // ★ 管理者データをGASからロード
 loadSchools();
+
