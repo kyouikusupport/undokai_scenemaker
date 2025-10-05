@@ -135,14 +135,16 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycby-ssxsEpTUFO7u7NE2ON8O
  * ストレージ
  * ========================= */
 async function saveAll() {
-  // 学校コードと学年名を含める（学校IDと学年単位で保存）
+  const gradeObj = currentGrade(); // ← 現在選択中の学年データを取得
+  const gradeName = gradeObj?.name || "未設定";
+
   const payload = {
     action: "save",
     schoolId: state.currentSchoolCode || "unknown",
-    grade: currentGrade()?.name || "未設定",
+    grade: gradeName,
     data: {
       field: state.field,
-      grades: state.grades
+      grades: [gradeObj] // ← ★ 現在の学年のみを送信！
     }
   };
 
@@ -150,12 +152,12 @@ async function saveAll() {
     const res = await fetch(GAS_URL, {
       method: "POST",
       body: JSON.stringify(payload),
-      headers: { "Content-Type": "text/plain" } // ← application/json ではなく text/plain
+      headers: { "Content-Type": "text/plain" }
     });
 
     const json = await res.json();
     if (json.status === "ok") {
-      flash("スプレッドシートに保存しました");
+      flash(`${gradeName} のデータをスプレッドシートに保存しました`);
     } else {
       alert("保存に失敗しました: " + json.status);
     }
@@ -163,6 +165,7 @@ async function saveAll() {
     alert("通信エラー: " + err.message);
   }
 }
+
 
 
 /** =========================
@@ -1716,19 +1719,24 @@ async function validateSchool(code, pass) {
 
   const json = await res.json();
   if (json.status === "ok") {
-    state.currentSchoolName = json.name; // ここに学校名を保持
-    state.currentSchoolCode = code;   // ★ 学校コードを保持（save時に使用）
+    state.currentSchoolName = json.name; // 学校名を保持
+    state.currentSchoolCode = code;       // 学校コードを保持（save時に使用）
+
     if (code === "admin") {
       currentMode = MODES.ADMIN;
     } else {
       currentMode = MODES.EDIT;
 
-      // ★ ここから追加部分（ログイン後の自動読み込み）===================
+      // ★ 自動読み込み部分 =============================
+      // 現在の学年名があればそれを使い、なければ「１年」をデフォルトに
+      const gradeName = currentGrade()?.name || "１年";
+
       const loadPayload = {
         action: "load",
         schoolId: code,
-        grade: "１年" // ← 学年名が別にある場合はここを currentGrade()?.name に
+        grade: gradeName
       };
+
       try {
         const res2 = await fetch(GAS_URL, {
           method: "POST",
@@ -1737,49 +1745,29 @@ async function validateSchool(code, pass) {
         });
         const json2 = await res2.json();
 
-        // 読み込み成功時
         if (json2 && json2.field && json2.grades) {
+          // ロード成功 → データ反映
           state.field = json2.field;
           state.grades = json2.grades;
-          flash("保存されているデータを読み込みました");
+          flash(`${gradeName} のデータを読み込みました`);
         } else {
-          flash("新しいデータを作成します");
+          flash("保存データが見つかりません。新しいデータを作成します。");
         }
+
         refreshAllUI();
       } catch (err) {
         alert("データ読み込みエラー: " + err.message);
       }
-      // ★ ここまで追加部分 ===========================================
+      // ★ 自動読み込みここまで =========================
     }
+
     updateModeUI();
     return true;
   }
+
   return false;
 }
 
-
-// ===== モード切替イベント =====
-el.gearIcon.addEventListener("click", () => {
-  if (currentMode === MODES.VIEW) {
-    // 閲覧モード → ログインダイアログ
-    el.loginDialog.classList.remove("hidden");
-  }
-  else if (currentMode === MODES.EDIT) {
-    // 編集モード → 閲覧モードに戻る確認
-    if (confirm("変更点を保存し、閲覧モードに戻りますか？")) {
-      saveAll(); // ← 保存実行
-      currentMode = MODES.VIEW;
-      updateModeUI();
-    }
-  }
-  else if (currentMode === MODES.ADMIN) {
-    if (confirm("変更点を保存して閲覧モードに戻りますか？")) {
-      saveAll(); // ← 保存実行
-      currentMode = MODES.VIEW;
-      updateModeUI();
-    }
-  }
-});
 
 el.loginBtn.addEventListener("click", async () => {
   const code = el.schoolCode.value.trim();
@@ -1922,6 +1910,7 @@ document.getElementById("copyPublicUrl").addEventListener("click", async () => {
     alert("クリップボードにコピーできませんでした: " + err.message);
   }
 });
+
 
 
 
