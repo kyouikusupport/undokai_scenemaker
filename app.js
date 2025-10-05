@@ -79,7 +79,7 @@ const state = {
     startAngle: 0,
     initialPositions: {}
   },
-  schools: JSON.parse(localStorage.getItem("undokai_admin_schools") || "[]"),
+  schools: [],
   playback: {
     index: 0,
     phase: "hold",
@@ -101,18 +101,6 @@ state.multiSelect = {
   selectedIds: [],
   orderedIds: []   // ★ 選択順を保持する配列
 };
-
-//adminモードでの入力（初期値: 不要なら削除可）
-state.schools = [
-  { name: "市川小学校", code: "ichikawa", pass: "1111" },
-  { name: "三郷小学校", code: "misato", pass: "2222" }
-];
-state.schools.push({ name: "", code: "", pass: "" });
-
-localStorage.setItem("undokai_schools", JSON.stringify(state.schools));
-
-const saved = localStorage.getItem("undokai_schools");
-if (saved) state.schools = JSON.parse(saved);
 
 // GASのデプロイURLを設定
 const GAS_URL = "https://script.google.com/macros/s/AKfycby-ssxsEpTUFO7u7NE2ON8OIpmYkeBVV01RC6itLiO2Jo56aDowqF68O7PFezsPXkMp/exec";
@@ -1815,14 +1803,8 @@ el.addSchoolBtn.addEventListener("click", () => {
 });
 
 el.saveSchoolsBtn.addEventListener("click", () => {
-  localStorage.setItem("undokai_schools", JSON.stringify(state.schools));
-  alert("学校リストを保存しました");
+  saveSchools(); // ← GASへ送信する関数を呼ぶ
 });
 
 // ★ 管理者データをGASからロード
 loadSchools();
-
-
-
-
-
