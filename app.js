@@ -45,6 +45,17 @@ function defaultField(){
     snap: { enabled: true, px: 18 }
   };
 }
+
+// --- 一時的なダミー定義（後で本体が上書きされる） ---
+function currentGrade() { return state.grades[state.currentGradeIndex] || { roster: [], workingPositions: {}, scenes: [] }; }
+function currentPositions() {
+  const g = currentGrade();
+  if (!g) return {};
+  if (state.currentSceneIndex >= 0 && g.scenes[state.currentSceneIndex])
+    return g.scenes[state.currentSceneIndex].positions || {};
+  return g.workingPositions || {};
+}
+
 function defaultGrade(name=DEFAULT_GRADE_NAME){
   return { name, roster: [], scenes: [], workingPositions: {} };
 }
@@ -1816,5 +1827,6 @@ el.saveSchoolsBtn.addEventListener("click", () => {
 
 // ★ 管理者データをGASからロード
 loadSchools();
+
 
 
