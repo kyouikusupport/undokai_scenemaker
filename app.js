@@ -1823,3 +1823,4 @@ el.saveSchoolsBtn.addEventListener("click", () => {
 loadSchools();
 
 
+
