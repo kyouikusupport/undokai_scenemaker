@@ -115,7 +115,7 @@ const saved = localStorage.getItem("undokai_schools");
 if (saved) state.schools = JSON.parse(saved);
 
 // GASのデプロイURLを設定
-const GAS_URL = "https://script.google.com/macros/s/AKfycbyBPB9UEpPNpXdhdMhCRftrBAZYmt5a6QYGiTWiODrkvcCM9MXXq5DHP_y84m0P3nYNQQ/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycby-ssxsEpTUFO7u7NE2ON8OIpmYkeBVV01RC6itLiO2Jo56aDowqF68O7PFezsPXkMp/exec";
 
 /** =========================
  * ストレージ
@@ -1821,6 +1821,7 @@ el.saveSchoolsBtn.addEventListener("click", () => {
 
 // ★ 管理者データをGASからロード
 loadSchools();
+
 
 
 
