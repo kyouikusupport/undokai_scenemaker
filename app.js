@@ -1588,6 +1588,42 @@ function fitCanvas(){
 }
 window.addEventListener("resize", fitCanvas);
 
+// --- URLパラメータによる閲覧モード起動 ---
+window.addEventListener("load", async () => {
+  const params = new URLSearchParams(window.location.search);
+  const school = params.get("school");
+  const grade = params.get("grade");
+
+  if (school && grade) {
+    flash(`閲覧モード: ${school} - ${grade}`);
+    const payload = { action: "load", schoolId: school, grade: grade };
+
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: { "Content-Type": "text/plain" }
+      });
+      const json = await res.json();
+      if (json.status === "not found") {
+        alert("データが見つかりませんでした");
+        return;
+      }
+
+      // 成功 → データを反映
+      const data = typeof json === "string" ? JSON.parse(json) : json;
+      state.field = data.field;
+      state.grades = data.grades;
+      state.mode = "view"; // 閲覧専用モード
+      refreshAllUI();
+    } catch (err) {
+      alert("閲覧モードの読み込みに失敗しました: " + err.message);
+    }
+  }
+});
+
+
+
 /** =========================
  * 学校リストをローカルストレージから読み込み
  * ========================= */
@@ -1856,6 +1892,7 @@ document.getElementById("copyPublicUrl").addEventListener("click", async () => {
     alert("クリップボードにコピーできませんでした: " + err.message);
   }
 });
+
 
 
 
