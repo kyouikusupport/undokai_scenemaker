@@ -56,6 +56,21 @@ function currentPositions() {
   return g.workingPositions || {};
 }
 
+/** =========================
+ * 現在の配置を取得
+ * ========================= */
+function currentPositions() {
+  const g = currentGrade();
+  if (!g) return {};  // 学年が未定義の場合
+  // 現在のシーンが選択されていればその positions を返す
+  if (state.currentSceneIndex >= 0 && g.scenes[state.currentSceneIndex]) {
+    return g.scenes[state.currentSceneIndex].positions || {};
+  }
+  // シーンが選択されていない場合は作業用の配置を返す
+  return g.workingPositions || {};
+}
+
+
 function defaultGrade(name=DEFAULT_GRADE_NAME){
   return { name, roster: [], scenes: [], workingPositions: {} };
 }
@@ -1827,6 +1842,7 @@ el.saveSchoolsBtn.addEventListener("click", () => {
 
 // ★ 管理者データをGASからロード
 loadSchools();
+
 
 
 
