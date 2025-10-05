@@ -1707,9 +1707,30 @@ el.loginBtn.addEventListener("click", async () => {
 });
 
 
-function saveSchools() {
-  localStorage.setItem("undokai_schools", JSON.stringify(state.schools));
+async function saveSchools() {
+  const payload = {
+    action: "saveAccounts",
+    data: state.schools
+  };
+
+  try {
+    const res = await fetch(GAS_URL, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "text/plain" } // ← CORS回避
+    });
+
+    const json = await res.json();
+    if (json.status === "ok") {
+      alert("スプレッドシートに学校リストを保存しました");
+    } else {
+      alert("保存に失敗しました: " + json.status);
+    }
+  } catch (err) {
+    alert("通信エラー: " + err.message);
+  }
 }
+
 
 // 管理者モード：学校リスト
 function refreshSchoolTable() {
@@ -1763,6 +1784,30 @@ function refreshSchoolTable() {
   });
 }
 
+async function loadSchools() {
+  const payload = { action: "loadAccounts" };
+
+  try {
+    const res = await fetch(GAS_URL, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "text/plain" }
+    });
+    const json = await res.json();
+
+    if (Array.isArray(json)) {
+      state.schools = json;
+      refreshSchoolTable();
+      console.log("学校リストをGASから読み込みました:", json);
+    } else {
+      console.warn("学校リストの形式が不正:", json);
+    }
+  } catch (err) {
+    alert("学校リストの読み込みに失敗しました: " + err.message);
+  }
+}
+
+
 // 学校追加
 el.addSchoolBtn.addEventListener("click", () => {
   state.schools.push({ name: "", code: "", pass: "" });
@@ -1774,5 +1819,7 @@ el.saveSchoolsBtn.addEventListener("click", () => {
   alert("学校リストを保存しました");
 });
 
+// ★ 管理者データをGASからロード
+loadSchools();
 
 
