@@ -1820,7 +1820,6 @@ async function loadSchools() {
     if (Array.isArray(json)) {
       state.schools = json;
       refreshSchoolTable();
-      console.log("学校リストをGASから読み込みました:", json);
     } else {
       console.warn("学校リストの形式が不正:", json);
     }
@@ -1842,6 +1841,7 @@ el.saveSchoolsBtn.addEventListener("click", () => {
 
 // ★ 管理者データをGASからロード
 loadSchools();
+
 
 
 
