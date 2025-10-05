@@ -1842,6 +1842,22 @@ el.saveSchoolsBtn.addEventListener("click", () => {
 // ★ 管理者データをGASからロード
 loadSchools();
 
+// --- 公開URLコピー機能 ---
+document.getElementById("copyPublicUrl").addEventListener("click", async () => {
+  const schoolId = state.currentSchoolCode;
+  const gradeName = currentGrade()?.name || "未設定";
+  const baseUrl = window.location.origin + window.location.pathname;
+  const url = `${baseUrl}?school=${encodeURIComponent(schoolId)}&grade=${encodeURIComponent(gradeName)}`;
+
+  try {
+    await navigator.clipboard.writeText(url);
+    flash("公開用URLをコピーしました");
+  } catch (err) {
+    alert("クリップボードにコピーできませんでした: " + err.message);
+  }
+});
+
+
 
 
 
