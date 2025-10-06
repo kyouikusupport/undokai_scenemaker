@@ -1702,7 +1702,7 @@ function updateModeUI() {
 }
 
 // =============================
-// 学校ログイン認証（GAS連携）★修正版
+// 学校ログイン認証（GAS連携）★複数学年対応・安定版
 // =============================
 async function validateSchool(code, pass) {
   const payload = {
@@ -1732,7 +1732,8 @@ async function validateSchool(code, pass) {
       // 一般学校モード
       currentMode = MODES.EDIT;
 
-      // ---- 学年名の初期値を決定 ----
+      // ---- ロードする学年を決定 ----
+      // （未指定なら「１年」）
       let gradeName = "１年";
       if (state.currentGradeIndex >= 0 && state.grades?.[state.currentGradeIndex]) {
         gradeName = state.grades[state.currentGradeIndex].name;
@@ -1740,15 +1741,19 @@ async function validateSchool(code, pass) {
         gradeName = state.grades[0].name;
       }
 
-      // ---- データ読込 ----
+      // ---- 半角→全角変換関数（比較ずれ対策）----
+      function toZenkakuNum(str) {
+        return str.replace(/[0-9]/g, s => String.fromCharCode(s.charCodeAt(0) + 0xFEE0));
+      }
+
       const loadPayload = {
         action: "load",
         schoolId: code,
-        grade: gradeName
+        grade: toZenkakuNum(gradeName)
       };
-      
+
       console.log("送信schoolId:", code);
-      console.log("送信gradeName:", gradeName);
+      console.log("送信gradeName:", loadPayload.grade);
 
       const res2 = await fetch(GAS_URL, {
         method: "POST",
@@ -1757,32 +1762,35 @@ async function validateSchool(code, pass) {
       });
 
       const json2 = await res2.json();
-
-      // ---- データ反映処理（修正版）----
       console.log("📦 読み込み結果:", json2);
 
+      // ---- データ反映 ----
       if (json2 && json2.field && json2.grades) {
         state.field = json2.field;
 
-        // ★ grades が配列でない場合も対応
+        // ★ grades が配列でない場合も柔軟に対応
         state.grades = Array.isArray(json2.grades)
           ? json2.grades
           : Object.values(json2.grades);
 
-        // ★ 学年名が欠けている場合、自動補完
+        // ★ 学年名が欠けているものを補完
         state.grades.forEach((g, i) => {
           if (!g.name) g.name = `学年${i + 1}`;
         });
 
         // ★ 最初の学年を選択状態に
-        state.currentGradeIndex = 0;
+        const idx = state.grades.findIndex(g => g.name === gradeName);
+        state.currentGradeIndex = idx >= 0 ? idx : 0;
 
-        // ★ UI反映
+        // ★ UI更新（セレクト反映）
         refreshAllUI();
         flash(`${gradeName} のデータを読み込みました`);
       } else {
-        flash(`${gradeName} のデータが見つかりません。新しいデータを作成します。`);
+        // データがない場合は初期学年を生成
+        state.grades = [{ name: "１年", roster: [], scenes: [] }];
+        state.currentGradeIndex = 0;
         refreshAllUI();
+        flash(`${gradeName} のデータが見つかりません。新しいデータを作成します。`);
       }
     }
 
@@ -1792,7 +1800,6 @@ async function validateSchool(code, pass) {
 
   return false;
 }
-
 
 el.loginBtn.addEventListener("click", async () => {
   const code = el.schoolCode.value.trim();
@@ -2006,6 +2013,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
 
 
 
