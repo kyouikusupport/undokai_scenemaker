@@ -605,7 +605,6 @@ function refreshRosterTable(){
       g.scenes.forEach(sc=>{
         delete sc.positions[s.id];
       });
-      ();
     });
     tdOp.appendChild(btnDel);
 
@@ -1997,6 +1996,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
 
 
 
