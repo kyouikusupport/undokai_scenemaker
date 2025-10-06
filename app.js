@@ -1702,7 +1702,7 @@ function updateModeUI() {
 }
 
 // =============================
-// 学校ログイン認証（GAS連携）★複数学年対応・安定版
+// 学校ログイン認証（GAS連携）★複数学年完全対応版
 // =============================
 async function validateSchool(code, pass) {
   const payload = {
@@ -1733,7 +1733,6 @@ async function validateSchool(code, pass) {
       currentMode = MODES.EDIT;
 
       // ---- ロードする学年を決定 ----
-      // （未指定なら「１年」）
       let gradeName = "１年";
 
       // ---- 半角→全角変換関数（比較ずれ対策）----
@@ -1749,7 +1748,6 @@ async function validateSchool(code, pass) {
 
       console.log("送信schoolId:", code);
       console.log("送信gradeName:", loadPayload.grade);
-      console.log(state.grades);
 
       const res2 = await fetch(GAS_URL, {
         method: "POST",
@@ -1762,27 +1760,39 @@ async function validateSchool(code, pass) {
 
       // ---- データ反映 ----
       if (json2 && json2.field && json2.grades) {
+        // 1️⃣ フィールドデータ
         state.field = json2.field;
 
-        // ★ grades が配列でない場合も柔軟に対応
-        state.grades = Array.isArray(json2.grades)
+        // 2️⃣ gradesを正規化してすべて格納
+        const loadedGrades = Array.isArray(json2.grades)
           ? json2.grades
           : Object.values(json2.grades);
 
-        // ★ 学年名が欠けているものを補完
-        state.grades.forEach((g, i) => {
-          if (!g.name) g.name = `学年${i + 1}`;
+        state.grades = []; // 一旦空に
+        loadedGrades.forEach((g, i) => {
+          state.grades.push({
+            name: g.name || `学年${i + 1}`,
+            roster: g.roster || [],
+            scenes: g.scenes || [],
+            workingPositions: g.workingPositions || {}
+          });
         });
 
-        // ★ 最初の学年を選択状態に
-        const idx = state.grades.findIndex(g => g.name === gradeName);
+        // 3️⃣ デフォルトで「１年」を選択（存在しなければ先頭）
+        const idx = state.grades.findIndex(g => g.name === "１年");
         state.currentGradeIndex = idx >= 0 ? idx : 0;
 
-        // ★ UI更新（セレクト反映）
-        refreshAllUI();
-        flash(`${gradeName} のデータを読み込みました`);
+        // 4️⃣ UI更新
+        refreshGradeSelect();
+        refreshRosterTable();
+        refreshFieldControls();
+        refreshSceneTable();
+        draw();
+
+        console.log("ロード完了時の学年一覧:", state.grades.map(g => g.name));
+        flash("全学年データを読み込みました");
       } else {
-        // データがない場合は初期学年を生成
+        // ---- データがない場合（初回用） ----
         state.grades = [{ name: "１年", roster: [], scenes: [] }];
         state.currentGradeIndex = 0;
         refreshAllUI();
@@ -2009,6 +2019,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
 
 
 
