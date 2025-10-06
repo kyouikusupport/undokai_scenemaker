@@ -1591,7 +1591,7 @@ function fitCanvas(){
 }
 window.addEventListener("resize", fitCanvas);
 
-// --- URLパラメータによる閲覧モード起動 ---
+// --- URLパラメータによる閲覧モード起動（ローディング表示付き）---
 window.addEventListener("load", async () => {
   const params = new URLSearchParams(window.location.search);
   const school = params.get("school");
@@ -1610,7 +1610,7 @@ window.addEventListener("load", async () => {
       schoolId: school,
       grade: toZenkakuNum(grade)
     };
-    
+
     // ★ 追加：読み込み中表示ON
     showLoading(true);
 
@@ -1656,15 +1656,15 @@ window.addEventListener("load", async () => {
 
       // --- UIを更新 ---
       refreshAllUI();
-      updateModeUI(); // ★ 追加：モードに応じてUIを再構成
+      updateModeUI(); // モードに応じてUIを再構成
     } catch (err) {
       alert("閲覧モードの読み込みに失敗しました: " + err.message);
+    } finally {
+      // ★ 追加：読み込み中表示OFF（成功・失敗どちらでも確実に非表示）
+      showLoading(false);
     }
   }
 });
-
-
-
 
 /** =========================
  * 学校リストをローカルストレージから読み込み
@@ -2120,5 +2120,6 @@ function showLoading(show) {
   if (!overlay) return;
   overlay.style.display = show ? "flex" : "none";
 }
+
 
 
