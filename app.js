@@ -1702,7 +1702,7 @@ function updateModeUI() {
 }
 
 // =============================
-// 学校ログイン認証（GAS連携）★複数学年完全対応版
+// 学校ログイン認証（GAS連携）★複数学年＋初期シーン自動ロード対応版
 // =============================
 async function validateSchool(code, pass) {
   const payload = {
@@ -1791,6 +1791,20 @@ async function validateSchool(code, pass) {
 
         console.log("ロード完了時の学年一覧:", state.grades.map(g => g.name));
         flash("全学年データを読み込みました");
+
+        // ★ 追加：ページ初回ロード時に最初のシーンを自動ロード
+        const firstGrade = state.grades[state.currentGradeIndex];
+        if (firstGrade && firstGrade.scenes && firstGrade.scenes.length > 0) {
+          state.currentSceneIndex = 0;
+          state.scene = firstGrade.scenes[0];
+          flash(`${firstGrade.name} の最初のシーンをロードしました`);
+        } else {
+          state.currentSceneIndex = -1;
+          state.scene = null;
+          flash(`${firstGrade.name} にシーンがありません。`);
+        }
+
+        refreshAllUI(); // ★ 追加：再描画
       } else {
         // ---- データがない場合（初回用） ----
         state.grades = [{ name: "１年", roster: [], scenes: [] }];
@@ -1806,6 +1820,7 @@ async function validateSchool(code, pass) {
 
   return false;
 }
+
 
 el.loginBtn.addEventListener("click", async () => {
   const code = el.schoolCode.value.trim();
@@ -2019,6 +2034,32 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
+// =============================
+// 学年セレクト変更時の処理（最初のシーンを自動ロード）
+// =============================
+const gradeSelectEl = document.getElementById("gradeSelect");
+if (gradeSelectEl) {
+  gradeSelectEl.addEventListener("change", (e) => {
+    state.currentGradeIndex = e.target.selectedIndex;
+
+    // 選択した学年データを取得
+    const currentGrade = state.grades[state.currentGradeIndex];
+
+    // 最初のシーンを自動ロード
+    if (currentGrade && currentGrade.scenes && currentGrade.scenes.length > 0) {
+      state.currentSceneIndex = 0;
+      state.scene = currentGrade.scenes[0];
+      flash(`${currentGrade.name} の最初のシーンをロードしました`);
+    } else {
+      state.currentSceneIndex = -1;
+      state.scene = null;
+      flash(`${currentGrade.name} にシーンがありません。`);
+    }
+
+    refreshAllUI();
+  });
+}
 
 
 
