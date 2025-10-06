@@ -129,7 +129,7 @@ state.multiSelect = {
 };
 
 // GASのデプロイURLを設定
-const GAS_URL = "https://script.google.com/macros/s/AKfycbyNEi6MYQSura-q8fSMTfq4sNOj_VeSpeAWk5ykmjMZQ4CTstNF_PGPJBT8BQrK4ljy/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyBPB9UEpPNpXdhdMhCRftrBAZYmt5a6QYGiTWiODrkvcCM9MXXq5DHP_y84m0P3nYNQQ/exec";
 
 /** =========================
  * ストレージ
@@ -1982,6 +1982,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
 
 
 
