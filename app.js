@@ -1911,6 +1911,31 @@ document.getElementById("copyPublicUrl").addEventListener("click", async () => {
   }
 });
 
+// ===== モード切替イベント =====
+el.gearIcon.addEventListener("click", () => {
+  if (currentMode === MODES.VIEW) {
+    // 閲覧モード → ログインダイアログ表示
+    el.loginDialog.classList.remove("hidden");
+  }
+  else if (currentMode === MODES.EDIT) {
+    // 編集モード → 保存して閲覧に戻る
+    if (confirm("変更点を保存し、閲覧モードに戻りますか？")) {
+      saveAll();
+      currentMode = MODES.VIEW;
+      updateModeUI();
+    }
+  }
+  else if (currentMode === MODES.ADMIN) {
+    // 管理者モード → 保存して閲覧に戻る
+    if (confirm("変更点を保存して閲覧モードに戻りますか？")) {
+      saveSchools();
+      currentMode = MODES.VIEW;
+      updateModeUI();
+    }
+  }
+});
+
+
 
 
 
