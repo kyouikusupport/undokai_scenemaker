@@ -1718,16 +1718,29 @@ async function validateSchool(code, pass) {
   });
 
   const json = await res.json();
-  if (json.status === "ok") {
-    state.currentSchoolName = json.name; // 学校名を保持
-    state.currentSchoolCode = code;       // 学校コードを保持（save時に使用）
 
+  if (json.status === "ok") {
+    // 認証成功時の共通処理
+    state.currentSchoolName = json.name; // 学校名を保持
+    state.currentSchoolCode = code;      // 学校コードを保持（save時に使用）
+
+    // ===============================
+    // 管理者モードの場合
+    // ===============================
     if (code === "admin") {
       currentMode = MODES.ADMIN;
-    } else {
+
+      // ★ ここを追加：学校リストをGASから読み込む
+      await loadSchools();
+      flash("管理者モードでログインしました");
+    }
+
+    // ===============================
+    // 一般学校モードの場合
+    // ===============================
+    else {
       currentMode = MODES.EDIT;
 
-      // ★ 自動読み込み部分 =============================
       // 現在の学年名があればそれを使い、なければ「１年」をデフォルトに
       const gradeName = currentGrade()?.name || "１年";
 
@@ -1758,13 +1771,16 @@ async function validateSchool(code, pass) {
       } catch (err) {
         alert("データ読み込みエラー: " + err.message);
       }
-      // ★ 自動読み込みここまで =========================
     }
 
+    // UIを更新
     updateModeUI();
     return true;
   }
 
+  // ===============================
+  // 認証失敗
+  // ===============================
   return false;
 }
 
@@ -1937,6 +1953,7 @@ el.gearIcon.addEventListener("click", () => {
     }
   }
 });
+
 
 
 
