@@ -1738,7 +1738,7 @@ function updateModeUI() {
 }
 
 // =============================
-// 学校ログイン認証（GAS連携）★複数学年＋初期シーン自動ロード対応版
+// 学校ログイン認証（GAS連携）★複数学年＋初期シーン自動ロード＋ローディング表示対応版
 // =============================
 async function validateSchool(code, pass) {
   const payload = {
@@ -1747,114 +1747,126 @@ async function validateSchool(code, pass) {
     password: pass
   };
 
-  const res = await fetch(GAS_URL, {
-    method: "POST",
-    body: JSON.stringify(payload),
-    headers: { "Content-Type": "text/plain" }
-  });
+  try {
+    // ★ 追加：読み込み中表示ON
+    showLoading(true);
 
-  const json = await res.json();
+    const res = await fetch(GAS_URL, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "text/plain" }
+    });
 
-  if (json.status === "ok") {
-    state.currentSchoolName = json.name;
-    state.currentSchoolCode = code;
+    const json = await res.json();
 
-    if (code === "admin") {
-      // 管理者モード
-      currentMode = MODES.ADMIN;
-      await loadSchools();
-      flash("管理者モードでログインしました");
-    } else {
-      // 一般学校モード
-      currentMode = MODES.EDIT;
+    if (json.status === "ok") {
+      state.currentSchoolName = json.name;
+      state.currentSchoolCode = code;
 
-      // ---- ロードする学年を決定 ----
-      let gradeName = "１年";
+      if (code === "admin") {
+        // 管理者モード
+        currentMode = MODES.ADMIN;
+        await loadSchools();
+        flash("管理者モードでログインしました");
+      } else {
+        // 一般学校モード
+        currentMode = MODES.EDIT;
 
-      // ---- 半角→全角変換関数（比較ずれ対策）----
-      function toZenkakuNum(str) {
-        return str.replace(/[0-9]/g, s => String.fromCharCode(s.charCodeAt(0) + 0xFEE0));
-      }
+        // ---- ロードする学年を決定 ----
+        let gradeName = "１年";
 
-      const loadPayload = {
-        action: "load",
-        schoolId: code,
-        grade: toZenkakuNum(gradeName)
-      };
-
-      console.log("送信schoolId:", code);
-      console.log("送信gradeName:", loadPayload.grade);
-
-      const res2 = await fetch(GAS_URL, {
-        method: "POST",
-        body: JSON.stringify(loadPayload),
-        headers: { "Content-Type": "text/plain" }
-      });
-
-      const json2 = await res2.json();
-      console.log("📦 読み込み結果:", json2);
-
-      // ---- データ反映 ----
-      if (json2 && json2.field && json2.grades) {
-        // 1️⃣ フィールドデータ
-        state.field = json2.field;
-
-        // 2️⃣ gradesを正規化してすべて格納
-        const loadedGrades = Array.isArray(json2.grades)
-          ? json2.grades
-          : Object.values(json2.grades);
-
-        state.grades = []; // 一旦空に
-        loadedGrades.forEach((g, i) => {
-          state.grades.push({
-            name: g.name || `学年${i + 1}`,
-            roster: g.roster || [],
-            scenes: g.scenes || [],
-            workingPositions: g.workingPositions || {}
-          });
-        });
-
-        // 3️⃣ デフォルトで「１年」を選択（存在しなければ先頭）
-        const idx = state.grades.findIndex(g => g.name === "１年");
-        state.currentGradeIndex = idx >= 0 ? idx : 0;
-
-        // 4️⃣ UI更新
-        refreshGradeSelect();
-        refreshRosterTable();
-        refreshFieldControls();
-        refreshSceneTable();
-        draw();
-
-        console.log("ロード完了時の学年一覧:", state.grades.map(g => g.name));
-        flash("全学年データを読み込みました");
-
-        // ★ 追加：ページ初回ロード時に最初のシーンを自動ロード
-        const firstGrade = state.grades[state.currentGradeIndex];
-        if (firstGrade && firstGrade.scenes && firstGrade.scenes.length > 0) {
-          state.currentSceneIndex = 0;
-          state.scene = firstGrade.scenes[0];
-          flash(`${firstGrade.name} の最初のシーンをロードしました`);
-        } else {
-          state.currentSceneIndex = -1;
-          state.scene = null;
-          flash(`${firstGrade.name} にシーンがありません。`);
+        // ---- 半角→全角変換関数（比較ずれ対策）----
+        function toZenkakuNum(str) {
+          return str.replace(/[0-9]/g, s => String.fromCharCode(s.charCodeAt(0) + 0xFEE0));
         }
 
-        refreshAllUI(); // ★ 追加：再描画
-      } else {
-        // ---- データがない場合（初回用） ----
-        state.grades = [{ name: "１年", roster: [], scenes: [] }];
-        state.currentGradeIndex = 0;
-        refreshAllUI();
-        flash(`${gradeName} のデータが見つかりません。新しいデータを作成します。`);
+        const loadPayload = {
+          action: "load",
+          schoolId: code,
+          grade: toZenkakuNum(gradeName)
+        };
+
+        console.log("送信schoolId:", code);
+        console.log("送信gradeName:", loadPayload.grade);
+
+        const res2 = await fetch(GAS_URL, {
+          method: "POST",
+          body: JSON.stringify(loadPayload),
+          headers: { "Content-Type": "text/plain" }
+        });
+
+        const json2 = await res2.json();
+        console.log("📦 読み込み結果:", json2);
+
+        // ---- データ反映 ----
+        if (json2 && json2.field && json2.grades) {
+          // 1️⃣ フィールドデータ
+          state.field = json2.field;
+
+          // 2️⃣ gradesを正規化してすべて格納
+          const loadedGrades = Array.isArray(json2.grades)
+            ? json2.grades
+            : Object.values(json2.grades);
+
+          state.grades = []; // 一旦空に
+          loadedGrades.forEach((g, i) => {
+            state.grades.push({
+              name: g.name || `学年${i + 1}`,
+              roster: g.roster || [],
+              scenes: g.scenes || [],
+              workingPositions: g.workingPositions || {}
+            });
+          });
+
+          // 3️⃣ デフォルトで「１年」を選択（存在しなければ先頭）
+          const idx = state.grades.findIndex(g => g.name === "１年");
+          state.currentGradeIndex = idx >= 0 ? idx : 0;
+
+          // 4️⃣ UI更新
+          refreshGradeSelect();
+          refreshRosterTable();
+          refreshFieldControls();
+          refreshSceneTable();
+          draw();
+
+          console.log("ロード完了時の学年一覧:", state.grades.map(g => g.name));
+          flash("全学年データを読み込みました");
+
+          // ★ 追加：ページ初回ロード時に最初のシーンを自動ロード
+          const firstGrade = state.grades[state.currentGradeIndex];
+          if (firstGrade && firstGrade.scenes && firstGrade.scenes.length > 0) {
+            state.currentSceneIndex = 0;
+            state.scene = firstGrade.scenes[0];
+            flash(`${firstGrade.name} の最初のシーンをロードしました`);
+          } else {
+            state.currentSceneIndex = -1;
+            state.scene = null;
+            flash(`${firstGrade.name} にシーンがありません。`);
+          }
+
+          refreshAllUI(); // ★ 追加：再描画
+        } else {
+          // ---- データがない場合（初回用） ----
+          state.grades = [{ name: "１年", roster: [], scenes: [] }];
+          state.currentGradeIndex = 0;
+          refreshAllUI();
+          flash(`${gradeName} のデータが見つかりません。新しいデータを作成します。`);
+        }
       }
+
+      updateModeUI();
+      return true;
+    } else {
+      flash("ログイン情報が正しくありません。");
+      return false;
     }
-
-    updateModeUI();
-    return true;
+  } catch (err) {
+    alert("通信エラーが発生しました: " + err.message);
+    return false;
+  } finally {
+    // ★ 追加：読み込み中表示OFF（正常終了でもエラーでも確実に消える）
+    showLoading(false);
   }
-
-  return false;
 }
 
 
@@ -2105,3 +2117,4 @@ function showLoading(show) {
   if (!overlay) return;
   overlay.style.display = show ? "flex" : "none";
 }
+
