@@ -1509,6 +1509,7 @@ function refreshAllUI(){
   refreshRosterTable();
   refreshFieldControls();
   refreshSceneTable();
+  showScene(state.currentSceneIndex || 0); // ← 最初のシーンに移動
   draw();
 }
 function refreshGradeSelect(){
@@ -1995,6 +1996,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
 
 
 
