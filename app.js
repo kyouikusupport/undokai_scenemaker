@@ -2097,26 +2097,11 @@ if (gradeSelectEl) {
   });
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// =============================
+// ローディング表示制御関数
+// =============================
+function showLoading(show) {
+  const overlay = document.getElementById("loadingOverlay");
+  if (!overlay) return;
+  overlay.style.display = show ? "flex" : "none";
+}
