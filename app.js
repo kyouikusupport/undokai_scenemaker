@@ -1735,11 +1735,6 @@ async function validateSchool(code, pass) {
       // ---- ロードする学年を決定 ----
       // （未指定なら「１年」）
       let gradeName = "１年";
-      if (state.currentGradeIndex >= 0 && state.grades?.[state.currentGradeIndex]) {
-        gradeName = state.grades[state.currentGradeIndex].name;
-      } else if (state.grades?.length > 0) {
-        gradeName = state.grades[0].name;
-      }
 
       // ---- 半角→全角変換関数（比較ずれ対策）----
       function toZenkakuNum(str) {
@@ -2013,6 +2008,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
 
 
 
