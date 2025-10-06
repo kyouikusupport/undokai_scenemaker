@@ -1746,6 +1746,9 @@ async function validateSchool(code, pass) {
         schoolId: code,
         grade: gradeName
       };
+      
+      console.log("送信schoolId:", code);
+      console.log("送信gradeName:", gradeName);
 
       const res2 = await fetch(GAS_URL, {
         method: "POST",
@@ -1757,8 +1760,6 @@ async function validateSchool(code, pass) {
 
       // ---- データ反映処理（修正版）----
       console.log("📦 読み込み結果:", json2);
-      console.log("送信schoolId:", code);
-      console.log("送信gradeName:", gradeName);
 
       if (json2 && json2.field && json2.grades) {
         state.field = json2.field;
@@ -2005,6 +2006,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
 
 
 
