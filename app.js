@@ -1749,6 +1749,7 @@ async function validateSchool(code, pass) {
 
       console.log("送信schoolId:", code);
       console.log("送信gradeName:", loadPayload.grade);
+      console.log(state.grades);
 
       const res2 = await fetch(GAS_URL, {
         method: "POST",
@@ -2008,6 +2009,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
 
 
 
