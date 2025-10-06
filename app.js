@@ -651,7 +651,7 @@ el.rosterTableBody.addEventListener("paste", (e)=>{
     }
   });
   syncRosterToScenes();
-  ();
+  refreshAllUI();
   flash(`${rows.length}人を追加しました`);
 });
 
@@ -1995,6 +1995,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
 
 
 
