@@ -1918,17 +1918,19 @@ loadSchools();
 // --- 公開URLコピー機能 ---
 document.getElementById("copyPublicUrl").addEventListener("click", async () => {
   const schoolId = state.currentSchoolCode;
-  const gradeName = currentGrade()?.name || "未設定";
+  const gradeName = currentGrade()?.name || "１年";
   const baseUrl = window.location.origin + window.location.pathname;
-  const url = `${baseUrl}?school=${encodeURIComponent(schoolId)}&grade=${encodeURIComponent(gradeName)}`;
+  const publicUrl = `${baseUrl}?school=${encodeURIComponent(schoolId)}&grade=${encodeURIComponent(gradeName)}`;
 
   try {
-    await navigator.clipboard.writeText(url);
-    flash("公開用URLをコピーしました");
+    await navigator.clipboard.writeText(publicUrl);
+    flash("公開URLをクリップボードにコピーしました");
+    console.log("公開URL:", publicUrl);
   } catch (err) {
-    alert("クリップボードにコピーできませんでした: " + err.message);
+    alert("URLコピーに失敗しました: " + err.message);
   }
 });
+
 
 // ===== モード切替イベント =====
 el.gearIcon.addEventListener("click", () => {
@@ -1950,6 +1952,48 @@ el.gearIcon.addEventListener("click", () => {
       saveSchools();
       currentMode = MODES.VIEW;
       updateModeUI();
+    }
+  }
+});
+
+// =============================
+// 公開URLから自動読み込み処理
+// =============================
+window.addEventListener("DOMContentLoaded", async () => {
+  const params = new URLSearchParams(window.location.search);
+  const schoolId = params.get("school");
+  const gradeName = params.get("grade");
+
+  if (schoolId && gradeName) {
+    console.log(`公開URLモード: ${schoolId} / ${gradeName}`);
+    try {
+      const payload = {
+        action: "load",
+        schoolId: schoolId,
+        grade: gradeName
+      };
+
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: { "Content-Type": "text/plain" }
+      });
+
+      const json = await res.json();
+
+      if (json && json.field && json.grades) {
+        state.field = json.field;
+        state.grades = json.grades;
+        currentMode = MODES.VIEW;
+        updateModeUI();
+        refreshAllUI();
+        flash(`${gradeName} のシーンを読み込みました`);
+      } else {
+        flash("該当データが見つかりませんでした。");
+      }
+    } catch (err) {
+      console.error("公開URL読み込みエラー:", err);
+      flash("データ読み込みに失敗しました。");
     }
   }
 });
