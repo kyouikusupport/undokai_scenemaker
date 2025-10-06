@@ -1509,9 +1509,15 @@ function refreshAllUI(){
   refreshRosterTable();
   refreshFieldControls();
   refreshSceneTable();
-  showScene(state.currentSceneIndex || 0); // ← 最初のシーンに移動
+
+  // showSceneが定義されている場合のみ呼び出す
+  if (typeof showScene === "function") {
+    showScene(state.currentSceneIndex || 0);
+  }
+
   draw();
 }
+
 function refreshGradeSelect(){
   el.gradeSelect.innerHTML = "";
   state.grades.forEach((g,idx)=>{
@@ -2000,6 +2006,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
 
 
 
