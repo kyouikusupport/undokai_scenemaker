@@ -621,8 +621,7 @@ function addRosterRow(){
 
   // 👇 シーンにも反映
   syncRosterToScenes();
-
-  ();
+  refreshAllUI();
 }
 
 function clearRoster(){
@@ -631,7 +630,7 @@ function clearRoster(){
   g.roster = [];
   g.workingPositions = {};
   g.scenes.forEach(sc=> sc.positions = {});
-  ();
+  refreshAllUI();
 }
 // 名簿テーブルにExcel/スプレッドシートから貼り付け（番号[TAB]氏名）
 el.rosterTableBody.addEventListener("paste", (e)=>{
@@ -1455,7 +1454,7 @@ el.deleteGradeBtn.addEventListener("click", deleteGrade);
 el.gradeSelect.addEventListener("change", ()=>{
   state.currentGradeIndex = Number(el.gradeSelect.value) || 0;
   state.currentSceneIndex = -1;
-  ();
+  refreshAllUI();
 });
 
 el.addRowBtn.addEventListener("click", addRosterRow);        // ← 行を追加（修正）
@@ -1490,7 +1489,7 @@ el.importFile.addEventListener("change", ()=>{
         state.grades.forEach(g=>g.roster.forEach(s=>{ if(!s.color) s.color="#0066ff"; }));
         state.currentGradeIndex = 0;
         state.currentSceneIndex = -1;
-        ();
+        refreshAllUI();
         flash("インポート完了");
       }else{
         alert("JSONの形式が不正です（field/grades）");
@@ -1996,6 +1995,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
 
 
 
