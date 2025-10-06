@@ -1599,7 +1599,17 @@ window.addEventListener("load", async () => {
 
   if (school && grade) {
     flash(`閲覧モード: ${school} - ${grade}`);
-    const payload = { action: "load", schoolId: school, grade: grade };
+
+    // ★ 半角→全角変換（比較ずれ対策）
+    function toZenkakuNum(str) {
+      return str.replace(/[0-9]/g, s => String.fromCharCode(s.charCodeAt(0) + 0xFEE0));
+    }
+
+    const payload = {
+      action: "load",
+      schoolId: school,
+      grade: toZenkakuNum(grade)
+    };
 
     try {
       const res = await fetch(GAS_URL, {
@@ -1608,22 +1618,48 @@ window.addEventListener("load", async () => {
         headers: { "Content-Type": "text/plain" }
       });
       const json = await res.json();
+
       if (json.status === "not found") {
         alert("データが見つかりませんでした");
         return;
       }
 
-      // 成功 → データを反映
+      // --- 成功 → データを反映 ---
       const data = typeof json === "string" ? JSON.parse(json) : json;
+
       state.field = data.field;
-      state.grades = data.grades;
+      state.grades = Array.isArray(data.grades)
+        ? data.grades
+        : Object.values(data.grades);
+
+      // ★ 指定された学年を選択状態に
+      const idx = state.grades.findIndex(g => g.name === toZenkakuNum(grade));
+      state.currentGradeIndex = idx >= 0 ? idx : 0;
+
+      // ★ 最初のシーンを自動ロード
+      const currentGrade = state.grades[state.currentGradeIndex];
+      if (currentGrade && currentGrade.scenes && currentGrade.scenes.length > 0) {
+        state.currentSceneIndex = 0;
+        state.scene = currentGrade.scenes[0];
+        flash(`${currentGrade.name} の最初のシーンをロードしました`);
+      } else {
+        state.currentSceneIndex = -1;
+        state.scene = null;
+        flash(`${currentGrade.name} にシーンがありません。`);
+      }
+
+      // --- 閲覧モードを設定 ---
       state.mode = "view"; // 閲覧専用モード
+
+      // --- UIを更新 ---
       refreshAllUI();
+      updateModeUI(); // ★ 追加：モードに応じてUIを再構成
     } catch (err) {
       alert("閲覧モードの読み込みに失敗しました: " + err.message);
     }
   }
 });
+
 
 
 
@@ -2060,6 +2096,7 @@ if (gradeSelectEl) {
     refreshAllUI();
   });
 }
+
 
 
 
