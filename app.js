@@ -1719,29 +1719,24 @@ async function validateSchool(code, pass) {
   const json = await res.json();
 
   if (json.status === "ok") {
-    // 認証成功時の共通処理
-    state.currentSchoolName = json.name; // 学校名を保持
-    state.currentSchoolCode = code;      // 学校コードを保持（save時に使用）
+    state.currentSchoolName = json.name;
+    state.currentSchoolCode = code;
 
-    // ===============================
-    // 管理者モードの場合
-    // ===============================
     if (code === "admin") {
       currentMode = MODES.ADMIN;
-
-      // ★ ここを追加：学校リストをGASから読み込む
       await loadSchools();
       flash("管理者モードでログインしました");
-    }
-
-    // ===============================
-    // 一般学校モードの場合
-    // ===============================
-    else {
+    } else {
       currentMode = MODES.EDIT;
 
-      // 現在の学年名があればそれを使い、なければ「１年」をデフォルトに
-      const gradeName = currentGrade()?.name || "１年";
+      // --- 学年を安全に特定 ---
+      // すでに選択済みならそれを使う、未選択なら最初の学年を選ぶ
+      let gradeName = "１年";
+      if (state.currentGradeIndex >= 0 && state.grades?.[state.currentGradeIndex]) {
+        gradeName = state.grades[state.currentGradeIndex].name;
+      } else if (state.grades?.length > 0) {
+        gradeName = state.grades[0].name;
+      }
 
       const loadPayload = {
         action: "load",
@@ -1755,15 +1750,15 @@ async function validateSchool(code, pass) {
           body: JSON.stringify(loadPayload),
           headers: { "Content-Type": "text/plain" }
         });
+
         const json2 = await res2.json();
 
         if (json2 && json2.field && json2.grades) {
-          // ロード成功 → データ反映
           state.field = json2.field;
           state.grades = json2.grades;
           flash(`${gradeName} のデータを読み込みました`);
         } else {
-          flash("保存データが見つかりません。新しいデータを作成します。");
+          flash(`${gradeName} のデータが見つかりません。新しいデータを作成します。`);
         }
 
         refreshAllUI();
@@ -1772,16 +1767,13 @@ async function validateSchool(code, pass) {
       }
     }
 
-    // UIを更新
     updateModeUI();
     return true;
   }
 
-  // ===============================
-  // 認証失敗
-  // ===============================
   return false;
 }
+
 
 
 el.loginBtn.addEventListener("click", async () => {
@@ -1996,6 +1988,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
 
 
 
