@@ -1610,6 +1610,9 @@ window.addEventListener("load", async () => {
       schoolId: school,
       grade: toZenkakuNum(grade)
     };
+    
+    // ★ 追加：読み込み中表示ON
+    showLoading(true);
 
     try {
       const res = await fetch(GAS_URL, {
@@ -2117,4 +2120,5 @@ function showLoading(show) {
   if (!overlay) return;
   overlay.style.display = show ? "flex" : "none";
 }
+
 
