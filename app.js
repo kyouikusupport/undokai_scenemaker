@@ -1,4 +1,4 @@
-﻿/** =========================
+/** =========================
  * データ構造とユーティリティ
  * ========================= */
 // ===== モード管理 =====
@@ -605,6 +605,7 @@ function refreshRosterTable(){
       g.scenes.forEach(sc=>{
         delete sc.positions[s.id];
       });
+      refreshAllUI();
     });
     tdOp.appendChild(btnDel);
 
@@ -621,6 +622,7 @@ function addRosterRow(){
 
   // 👇 シーンにも反映
   syncRosterToScenes();
+
   refreshAllUI();
 }
 
@@ -1509,15 +1511,8 @@ function refreshAllUI(){
   refreshRosterTable();
   refreshFieldControls();
   refreshSceneTable();
-
-  // showSceneが定義されている場合のみ呼び出す
-  if (typeof showScene === "function") {
-    showScene(state.currentSceneIndex || 0);
-  }
-
   draw();
 }
-
 function refreshGradeSelect(){
   el.gradeSelect.innerHTML = "";
   state.grades.forEach((g,idx)=>{
@@ -1725,23 +1720,29 @@ async function validateSchool(code, pass) {
   const json = await res.json();
 
   if (json.status === "ok") {
-    state.currentSchoolName = json.name;
-    state.currentSchoolCode = code;
+    // 認証成功時の共通処理
+    state.currentSchoolName = json.name; // 学校名を保持
+    state.currentSchoolCode = code;      // 学校コードを保持（save時に使用）
 
+    // ===============================
+    // 管理者モードの場合
+    // ===============================
     if (code === "admin") {
       currentMode = MODES.ADMIN;
+
+      // ★ ここを追加：学校リストをGASから読み込む
       await loadSchools();
       flash("管理者モードでログインしました");
-    } else {
+    }
+
+    // ===============================
+    // 一般学校モードの場合
+    // ===============================
+    else {
       currentMode = MODES.EDIT;
 
-      // --- 学年を安全に特定 ---
-      let gradeName = "１年";
-      if (state.currentGradeIndex >= 0 && state.grades?.[state.currentGradeIndex]) {
-        gradeName = state.grades[state.currentGradeIndex].name;
-      } else if (state.grades?.length > 0) {
-        gradeName = state.grades[0].name;
-      }
+      // 現在の学年名があればそれを使い、なければ「１年」をデフォルトに
+      const gradeName = currentGrade()?.name || "１年";
 
       const loadPayload = {
         action: "load",
@@ -1755,30 +1756,15 @@ async function validateSchool(code, pass) {
           body: JSON.stringify(loadPayload),
           headers: { "Content-Type": "text/plain" }
         });
+        const json2 = await res2.json();
 
-        // ★ ここを修正：textで受けてからパース
-        const text2 = await res2.text();
-        let json2 = null;
-        try {
-          json2 = JSON.parse(text2);
-        } catch (e) {
-          console.warn("受信データがJSONとして無効:", text2);
-        }
-
-        // --- 読み込み結果の判定 ---
         if (json2 && json2.field && json2.grades) {
+          // ロード成功 → データ反映
           state.field = json2.field;
           state.grades = json2.grades;
           flash(`${gradeName} のデータを読み込みました`);
-        } else if (json2 && json2.status === "not found") {
-          flash(`${gradeName} のデータが見つかりません。新しいデータを作成します。`);
-        } else if (json2) {
-          // 保存データが単純に field/grades を含まない形式（旧仕様）
-          state.field = json2.field || {};
-          state.grades = json2.grades || [];
-          flash(`${gradeName} のデータを読み込みました`);
         } else {
-          flash("データの読み込みに失敗しました。");
+          flash("保存データが見つかりません。新しいデータを作成します。");
         }
 
         refreshAllUI();
@@ -1787,12 +1773,17 @@ async function validateSchool(code, pass) {
       }
     }
 
+    // UIを更新
     updateModeUI();
     return true;
   }
 
+  // ===============================
+  // 認証失敗
+  // ===============================
   return false;
 }
+
 
 el.loginBtn.addEventListener("click", async () => {
   const code = el.schoolCode.value.trim();
@@ -2006,16 +1997,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
-
-
-
-
-
-
-
-
-
-
 
 
 
