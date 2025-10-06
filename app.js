@@ -1730,7 +1730,6 @@ async function validateSchool(code, pass) {
       currentMode = MODES.EDIT;
 
       // --- 学年を安全に特定 ---
-      // すでに選択済みならそれを使う、未選択なら最初の学年を選ぶ
       let gradeName = "１年";
       if (state.currentGradeIndex >= 0 && state.grades?.[state.currentGradeIndex]) {
         gradeName = state.grades[state.currentGradeIndex].name;
@@ -1751,14 +1750,29 @@ async function validateSchool(code, pass) {
           headers: { "Content-Type": "text/plain" }
         });
 
-        const json2 = await res2.json();
+        // ★ ここを修正：textで受けてからパース
+        const text2 = await res2.text();
+        let json2 = null;
+        try {
+          json2 = JSON.parse(text2);
+        } catch (e) {
+          console.warn("受信データがJSONとして無効:", text2);
+        }
 
+        // --- 読み込み結果の判定 ---
         if (json2 && json2.field && json2.grades) {
           state.field = json2.field;
           state.grades = json2.grades;
           flash(`${gradeName} のデータを読み込みました`);
-        } else {
+        } else if (json2 && json2.status === "not found") {
           flash(`${gradeName} のデータが見つかりません。新しいデータを作成します。`);
+        } else if (json2) {
+          // 保存データが単純に field/grades を含まない形式（旧仕様）
+          state.field = json2.field || {};
+          state.grades = json2.grades || [];
+          flash(`${gradeName} のデータを読み込みました`);
+        } else {
+          flash("データの読み込みに失敗しました。");
         }
 
         refreshAllUI();
@@ -1773,8 +1787,6 @@ async function validateSchool(code, pass) {
 
   return false;
 }
-
-
 
 el.loginBtn.addEventListener("click", async () => {
   const code = el.schoolCode.value.trim();
@@ -1988,6 +2000,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
 
 
 
