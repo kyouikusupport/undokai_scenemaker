@@ -1861,7 +1861,10 @@ function refreshSchoolTable() {
 }
 
 async function loadSchools() {
-  const payload = { action: "loadAccounts" };
+  const payload = { 
+    action: "loadAccounts",
+    schoolId: state.currentSchoolCode || ""   // ★ 管理者判定に必要
+  };
 
   try {
     const res = await fetch(GAS_URL, {
@@ -1934,6 +1937,7 @@ el.gearIcon.addEventListener("click", () => {
     }
   }
 });
+
 
 
 
