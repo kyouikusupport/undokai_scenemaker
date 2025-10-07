@@ -507,16 +507,30 @@ function drawSplits(fr) {
 }
 
 /** =========================
- * 描画
+ * デバイススケール取得（スマホ・タブレット対応）
  * ========================= */
-function draw(){
+function getDeviceScale() {
+  const w = window.innerWidth;
+  if (w < 480) return 0.5;   // スマホ（幅480px未満）
+  if (w < 768) return 0.75;  // タブレット
+  return 1.0;                // PC
+}
+
+/** =========================
+ * 描画（スケール対応・描写全体）
+ * ========================= */
+function draw() {
+  const scale = getDeviceScale();
+  ctx.save();
+  ctx.scale(scale, scale);
+
   applyViewTransform();
 
   const fr = rects().rect;
 
   drawTrackOutline();           // トラックの線
   drawRectVerticalEdges(fr);    // 縦線
-  if(state.field.showSplit) drawSplits(fr);  // 分割線（縦横）
+  if (state.field.showSplit) drawSplits(fr);  // 分割線（縦横）
 
   const rectBase = rects().rect;
 
@@ -531,7 +545,7 @@ function draw(){
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
       ctx.strokeStyle = line.color || "#000000";
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2 * scale;
       ctx.stroke();
     });
   }
@@ -546,12 +560,12 @@ function draw(){
       ctx.beginPath();
       ctx.rect(x, y, w, h);
       ctx.strokeStyle = rect.color || "#000000";
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2 * scale;
       ctx.stroke();
 
       // 四角内の文字
       if (rect.text) {
-        ctx.font = "16px sans-serif";
+        ctx.font = `${16 * scale}px sans-serif`;
         ctx.fillStyle = rect.color || "#000000";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -571,52 +585,71 @@ function draw(){
       ctx.beginPath();
       ctx.arc(cx, cy, r, start, end);
       ctx.strokeStyle = half.color || "#000000";
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2 * scale;
       ctx.stroke();
     });
   }
 
   // === 円（内側の円） ===
-  state.field.circles.forEach((c,i)=>{
-    const p = n2pRect(c.x, c.y);
-    const rpx = c.r * rects().rect.w;
-    ctx.beginPath(); ctx.arc(p.x, p.y, rpx, 0, Math.PI*2);
-    ctx.strokeStyle = c.color || "#000000"; ctx.lineWidth = 2; ctx.stroke();
-    if(state.selectedCircleIndex === i){
-      ctx.setLineDash([4,3]); ctx.strokeStyle = "#333"; ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]);
-    }
-  });
+  if (Array.isArray(state.field.circles)) {
+    state.field.circles.forEach((c, i) => {
+      const p = n2pRect(c.x, c.y);
+      const rpx = c.r * rects().rect.w;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, rpx, 0, Math.PI * 2);
+      ctx.strokeStyle = c.color || "#000000";
+      ctx.lineWidth = 2 * scale;
+      ctx.stroke();
+      if (state.selectedCircleIndex === i) {
+        ctx.setLineDash([4 * scale, 3 * scale]);
+        ctx.strokeStyle = "#333";
+        ctx.lineWidth = 1.5 * scale;
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    });
+  }
 
   // === 目印（markers） ===
-  state.field.markers.forEach((m,i)=>{
-    const p = n2pRect(m.x, m.y);
-    ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI*2);
-    ctx.fillStyle = m.color || "#ff0000";
-    ctx.fill();
-    if((m.color||"").toLowerCase() === "#ffffff"){
-      ctx.lineWidth = 2; ctx.strokeStyle = "#000"; ctx.stroke();
-    }
-    if(state.selectedMarkerIndex === i){
-      ctx.lineWidth = 2; ctx.strokeStyle = "#333"; ctx.stroke();
-    }
-  });
+  if (Array.isArray(state.field.markers)) {
+    state.field.markers.forEach((m, i) => {
+      const p = n2pRect(m.x, m.y);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 6 * scale, 0, Math.PI * 2);
+      ctx.fillStyle = m.color || "#ff0000";
+      ctx.fill();
+      if ((m.color || "").toLowerCase() === "#ffffff") {
+        ctx.lineWidth = 2 * scale;
+        ctx.strokeStyle = "#000";
+        ctx.stroke();
+      }
+      if (state.selectedMarkerIndex === i) {
+        ctx.lineWidth = 2 * scale;
+        ctx.strokeStyle = "#333";
+        ctx.stroke();
+      }
+    });
+  }
 
   // === 子どもポイント（名札） ===
   const positions = currentPositions();
-  ctx.font = `14px system-ui, "Noto Sans JP", sans-serif`;
-  ctx.textAlign = "center"; ctx.textBaseline = "bottom";
-  currentGrade().roster.forEach((s)=>{
-    const pos = positions[s.id]; if(!pos) return;
+  ctx.font = `${14 * scale}px system-ui, "Noto Sans JP", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+  currentGrade().roster.forEach((s) => {
+    const pos = positions[s.id];
+    if (!pos) return;
     const p = n2pStad(pos.x, pos.y);
-    drawStudentGlyph(p.x, p.y, s.color || "#0066ff");
-    ctx.fillStyle = "#111"; ctx.fillText(s.name, p.x, p.y - 10);
+    drawStudentGlyph(p.x, p.y, s.color || "#0066ff", scale);
+    ctx.fillStyle = "#111";
+    ctx.fillText(s.name, p.x, p.y - 10 * scale);
   });
 
   // === 複数選択範囲 ===
-  if(state.multiSelect.active){
+  if (state.multiSelect.active) {
     ctx.save();
     ctx.strokeStyle = "#1a56db";
-    ctx.setLineDash([4,2]);
+    ctx.setLineDash([4 * scale, 2 * scale]);
     const x = state.multiSelect.startX;
     const y = state.multiSelect.startY;
     const w = state.multiSelect.endX - state.multiSelect.startX;
@@ -626,16 +659,46 @@ function draw(){
   }
 
   // === 選択ハイライト ===
-  state.multiSelect.selectedIds.forEach(id=>{
+  state.multiSelect.selectedIds.forEach((id) => {
     const pos = currentPositions()[id];
-    if(!pos) return;
+    if (!pos) return;
     const p = n2pStad(pos.x, pos.y);
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 12, 0, Math.PI*2);
+    ctx.arc(p.x, p.y, 12 * scale, 0, Math.PI * 2);
     ctx.strokeStyle = "#1a56db";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2 * scale;
     ctx.stroke();
   });
+
+  ctx.restore();
+}
+
+// =========================
+// 子どもポイント描画（●＋▲）
+// =========================
+function drawStudentGlyph(x, y, fill, scale = 1) {
+  const r = 7 * scale;
+  const stroke = strokeFor(fill);
+  const apexY = y + r - 4 * scale;
+  const h = 18 * scale, w = 16 * scale;
+
+  ctx.beginPath();
+  ctx.moveTo(x, apexY);
+  ctx.lineTo(x - w / 2, apexY + h);
+  ctx.lineTo(x + w / 2, apexY + h);
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.strokeStyle = stroke;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.lineWidth = 2 * scale;
+  ctx.strokeStyle = stroke;
+  ctx.stroke();
 }
 
 /** =========================
@@ -2382,6 +2445,13 @@ function showLoading(show) {
   const overlay = document.getElementById("loadingOverlay");
   if (!overlay) return;
   overlay.style.display = show ? "flex" : "none";
+}
+
+function getDeviceScale() {
+  const w = window.innerWidth;
+  if (w < 480) return 0.5;   // スマホ（幅480px以下）→ 半分サイズ
+  if (w < 768) return 0.75;  // タブレット
+  return 1.0;                // PC
 }
 
 
