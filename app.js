@@ -1302,8 +1302,7 @@ el.canvas.addEventListener("mousedown", (e) => {
   }
 });
 
-
-el.canvas.addEventListener("mousemove", (e)=>{
+el.canvas.addEventListener("mousemove", (e) => {
   lastMouseX = e.clientX;
   lastMouseY = e.clientY;
 
@@ -1312,29 +1311,80 @@ el.canvas.addEventListener("mousemove", (e)=>{
   const py = e.clientY - rect.top;
   const world = screenToWorld(px, py);
 
+  // ------------------------------
+  // グランド編集：ドラッグ中プレビュー描画
+  // ------------------------------
+  if (state.dragging === "drawingLine" && state.drawTemp) {
+    state.drawTemp.end = { x: world.x, y: world.y };
+    draw();
+    const ctx2 = el.canvas.getContext("2d");
+    ctx2.save();
+    ctx2.beginPath();
+    ctx2.moveTo(state.drawTemp.start.x, state.drawTemp.start.y);
+    ctx2.lineTo(world.x, world.y);
+    ctx2.strokeStyle = state.drawTemp.color;
+    ctx2.lineWidth = 2;
+    ctx2.stroke();
+    ctx2.restore();
+    return;
+  }
+
+  if (state.dragging === "drawingRect" && state.drawTemp) {
+    state.drawTemp.end = { x: world.x, y: world.y };
+    draw();
+    const ctx2 = el.canvas.getContext("2d");
+    const sx = state.drawTemp.start.x, sy = state.drawTemp.start.y;
+    const w = world.x - sx, h = world.y - sy;
+    ctx2.save();
+    ctx2.beginPath();
+    ctx2.rect(sx, sy, w, h);
+    ctx2.strokeStyle = state.drawTemp.color;
+    ctx2.lineWidth = 2;
+    ctx2.stroke();
+    ctx2.restore();
+    return;
+  }
+
+  if (state.dragging === "drawingHalfCircle" && state.tempHalfCircle?.start) {
+    draw();
+    const ctx2 = el.canvas.getContext("2d");
+    const cx = state.tempHalfCircle.cx;
+    const cy = state.tempHalfCircle.cy;
+    const start = state.tempHalfCircle.start;
+    const dx = world.x - cx;
+    const dy = world.y - cy;
+    const r = Math.hypot(dx, dy);
+    const startAngle = Math.atan2(start.y - cy, start.x - cx);
+    const endAngle = Math.atan2(world.y - cy, world.x - cx);
+    ctx2.save();
+    ctx2.beginPath();
+    ctx2.arc(cx, cy, r, startAngle, endAngle);
+    ctx2.strokeStyle = "#000000";
+    ctx2.lineWidth = 2;
+    ctx2.stroke();
+    ctx2.restore();
+    return;
+  }
+
+  // ------------------------------
   // 回転中
-  if(state.rotate.active && state.rotate.dragging){
+  // ------------------------------
+  if (state.rotate.active && state.rotate.dragging) {
     const pos = currentPositions();
     const ids = Object.keys(state.rotate.initialPositions);
-
-    const angle = Math.atan2(world.y - state.rotate.centerY,
-                             world.x - state.rotate.centerX);
+    const angle = Math.atan2(world.y - state.rotate.centerY, world.x - state.rotate.centerX);
     const delta = angle - state.rotate.startAngle;
-
     const cCanvas = n2pStad(state.rotate.centerX, state.rotate.centerY);
 
-    ids.forEach(id=>{
+    ids.forEach((id) => {
       const p0 = state.rotate.initialPositions[id];
-      if(!p0) return;
-
+      if (!p0) return;
       const pCanvas = n2pStad(p0.x, p0.y);
       const rx = pCanvas.x - cCanvas.x;
       const ry = pCanvas.y - cCanvas.y;
-
       const cos = Math.cos(delta), sin = Math.sin(delta);
-      const newX = cCanvas.x + rx*cos - ry*sin;
-      const newY = cCanvas.y + rx*sin + ry*cos;
-
+      const newX = cCanvas.x + rx * cos - ry * sin;
+      const newY = cCanvas.y + rx * sin + ry * cos;
       const n = p2nStad(newX, newY);
       pos[id].x = n.x;
       pos[id].y = n.y;
@@ -1345,7 +1395,7 @@ el.canvas.addEventListener("mousemove", (e)=>{
   }
 
   // パン中
-  if(panDrag){
+  if (panDrag) {
     state.view.x = panDrag.ox + (px - panDrag.sx);
     state.view.y = panDrag.oy + (py - panDrag.sy);
     draw();
@@ -1353,54 +1403,51 @@ el.canvas.addEventListener("mousemove", (e)=>{
   }
 
   // 範囲選択中
-  if(state.multiSelect.active){
+  if (state.multiSelect.active) {
     state.multiSelect.endX = world.x;
     state.multiSelect.endY = world.y;
-
     const g = currentGrade();
     const pos = currentPositions();
-
-    const newSelected = g.roster.filter(st=>{
+    const newSelected = g.roster.filter(st => {
       const p = n2pStad(pos[st.id].x, pos[st.id].y);
-      const [minX,maxX] = [Math.min(state.multiSelect.startX, state.multiSelect.endX),
+      const [minX, maxX] = [Math.min(state.multiSelect.startX, state.multiSelect.endX),
                            Math.max(state.multiSelect.startX, state.multiSelect.endX)];
-      const [minY,maxY] = [Math.min(state.multiSelect.startY, state.multiSelect.endY),
+      const [minY, maxY] = [Math.min(state.multiSelect.startY, state.multiSelect.endY),
                            Math.max(state.multiSelect.startY, state.multiSelect.endY)];
-      return (p.x>=minX && p.x<=maxX && p.y>=minY && p.y<=maxY);
-    }).map(st=>st.id);
+      return (p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY);
+    }).map(st => st.id);
 
-    if(!state.multiSelect.orderedIds) state.multiSelect.orderedIds = [];
-    state.multiSelect.orderedIds = state.multiSelect.orderedIds.filter(id=> newSelected.includes(id));
-    newSelected.forEach(id=>{
-      if(!state.multiSelect.orderedIds.includes(id)){
+    if (!state.multiSelect.orderedIds) state.multiSelect.orderedIds = [];
+    state.multiSelect.orderedIds = state.multiSelect.orderedIds.filter(id => newSelected.includes(id));
+    newSelected.forEach(id => {
+      if (!state.multiSelect.orderedIds.includes(id)) {
         state.multiSelect.orderedIds.push(id);
       }
     });
-
     state.multiSelect.selectedIds = [...state.multiSelect.orderedIds];
     draw();
     return;
   }
 
   // 子ども移動中
-  if(state.dragging?.type==="student"){
+  if (state.dragging?.type === "student") {
     const n = p2nStad(world.x, world.y);
     const pos = currentPositions();
 
-    if(state.multiSelect.selectedIds.length > 1){
+    if (state.multiSelect.selectedIds.length > 1) {
       const base = pos[state.dragging.id];
-      if(base){
+      if (base) {
         const dx = n.x - base.x;
         const dy = n.y - base.y;
-        state.multiSelect.selectedIds.forEach(id=>{
-          if(pos[id]){
+        state.multiSelect.selectedIds.forEach((id) => {
+          if (pos[id]) {
             pos[id].x += dx;
             pos[id].y += dy;
           }
         });
       }
     } else {
-      if(pos[state.dragging.id]){
+      if (pos[state.dragging.id]) {
         pos[state.dragging.id].x = n.x;
         pos[state.dragging.id].y = n.y;
       }
@@ -1408,97 +1455,86 @@ el.canvas.addEventListener("mousemove", (e)=>{
     draw();
   }
 
-  if(!state.dragging && !state.multiSelect.active && !state.rotate.active){
+  if (!state.dragging && !state.multiSelect.active && !state.rotate.active) {
     const id = pickStudent(world.x, world.y);
     el.canvas.style.cursor = id ? "grab" : "default";
   }
 });
 
-window.addEventListener("mouseup", ()=>{
-  if(state.multiSelect.active){
+window.addEventListener("mouseup", (e) => {
+  const rect = el.canvas.getBoundingClientRect();
+  const px = e.clientX - rect.left;
+  const py = e.clientY - rect.top;
+  const world = screenToWorld(px, py);
+
+  // ------------------------------
+  // グランド編集：確定処理
+  // ------------------------------
+  if (state.dragging === "drawingLine" && state.drawTemp) {
+    const { start, end, color } = state.drawTemp;
+    state.field.lines.push({
+      x1: start.x, y1: start.y,
+      x2: end.x, y2: end.y,
+      color
+    });
+    state.drawTemp = null;
+    state.dragging = null;
+    draw();
+    return;
+  }
+
+  if (state.dragging === "drawingRect" && state.drawTemp) {
+    const { start, end, color } = state.drawTemp;
+    state.field.rectangles.push({
+      x: Math.min(start.x, end.x),
+      y: Math.min(start.y, end.y),
+      w: Math.abs(end.x - start.x),
+      h: Math.abs(end.y - start.y),
+      color,
+      text: ""
+    });
+    state.drawTemp = null;
+    state.dragging = null;
+    draw();
+    return;
+  }
+
+  if (state.dragging === "drawingHalfCircle" && state.tempHalfCircle?.start) {
+    const cx = state.tempHalfCircle.cx;
+    const cy = state.tempHalfCircle.cy;
+    const start = state.tempHalfCircle.start;
+    const dx = start.x - cx;
+    const dy = start.y - cy;
+    const r = Math.hypot(dx, dy);
+    const startAngle = Math.atan2(start.y - cy, start.x - cx);
+    const endAngle = Math.atan2(world.y - cy, world.x - cx);
+    state.field.halfCircles.push({
+      cx, cy, r,
+      startAngle, endAngle,
+      color: "#000000"
+    });
+    state.tempHalfCircle = null;
+    state.dragging = null;
+    draw();
+    return;
+  }
+
+  // ------------------------------
+  // 通常の選択・パン解除
+  // ------------------------------
+  if (state.multiSelect.active) {
     state.multiSelect.active = false;
     draw();
   }
-  if(state.dragging){
+  if (state.dragging) {
     state.dragging = null;
     el.canvas.style.cursor = "default";
   }
-  if(state.rotate.dragging){
-    state.rotate.dragging = false; // 左クリック解除 → 回転は一時停止
+  if (state.rotate.dragging) {
+    state.rotate.dragging = false;
   }
   panDrag = null;
 });
-
-// 右クリックメニュー表示
-el.canvas.addEventListener("contextmenu", (e)=>{
-  e.preventDefault();
-  if(state.multiSelect.selectedIds.length > 1 && !state.rotate.active){
-    const menu = document.getElementById("contextMenu");
-    menu.style.left = e.pageX + "px";
-    menu.style.top  = e.pageY + "px";
-    menu.style.display = "block";
-  }
-});
-
-document.getElementById("contextMenu").addEventListener("click", (e)=>{
-  const action = e.target.dataset.action;
-  if(!action) return;
-  if(action==="distribute"){
-    distributeEvenly();
-  } else if(action==="rotate"){
-    startRotate();
-  }
-  document.getElementById("contextMenu").style.display="none";
-});
-
-function distributeEvenly(){
-  const ids = state.multiSelect.selectedIds;
-  if(ids.length < 2) return;
-  const pos = currentPositions();
-  const start = pos[ids[0]];
-  const end   = pos[ids[ids.length-1]];
-  if(!start || !end) return;
-  const dx = (end.x - start.x) / (ids.length - 1);
-  const dy = (end.y - start.y) / (ids.length - 1);
-  ids.forEach((id,i)=>{
-    pos[id].x = start.x + dx*i;
-    pos[id].y = start.y + dy*i;
-  });
-  draw();
-  flash("等間隔に配置しました");
-}
-
-function startRotate(){
-  const pos = currentPositions();
-  const ids = state.multiSelect.orderedIds?.length
-              ? state.multiSelect.orderedIds
-              : state.multiSelect.selectedIds;
-  if(ids.length < 2) return;
-
-  let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
-  ids.forEach(id=>{
-    if(pos[id]){
-      const pCanvas = n2pStad(pos[id].x, pos[id].y);
-      minX = Math.min(minX, pCanvas.x);
-      maxX = Math.max(maxX, pCanvas.x);
-      minY = Math.min(minY, pCanvas.y);
-      maxY = Math.max(maxY, pCanvas.y);
-    }
-  });
-  const cx = (minX + maxX)/2;
-  const cy = (minY + maxY)/2;
-
-  state.rotate.active = true;
-  state.rotate.dragging = false; // 左クリックで有効化するまで待機
-  state.rotate.centerX = p2nStad(cx, cy).x;
-  state.rotate.centerY = p2nStad(cx, cy).y;
-  state.rotate.initialPositions = {};
-  ids.forEach(id=>{
-    if(pos[id]){
-      state.rotate.initialPositions[id] = {x: pos[id].x, y: pos[id].y};
-    }
-  });
-}
 
 /** =========================
  * タブ切替（設定ウインドウ内）
@@ -2312,6 +2348,7 @@ function showLoading(show) {
   if (!overlay) return;
   overlay.style.display = show ? "flex" : "none";
 }
+
 
 
 
