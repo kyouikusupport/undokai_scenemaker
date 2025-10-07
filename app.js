@@ -1882,23 +1882,6 @@ window.addEventListener("load", async () => {
 });
 
 /** =========================
- * 学校リストをローカルストレージから読み込み
- * ========================= */
-const savedSchools = localStorage.getItem("undokai_schools");
-if (savedSchools) {
-  try {
-    state.schools = JSON.parse(savedSchools);
-  } catch {
-    state.schools = [];
-  }
-} else {
-  // 初回用のデフォルト（必要なら）
-  state.schools = [
-    { name: "市川小学校", code: "ichikawa", pass: "1111" }
-  ];
-}
-
-/** =========================
  * 起動
  * ========================= */
 refreshAllUI();
@@ -2348,6 +2331,7 @@ function showLoading(show) {
   if (!overlay) return;
   overlay.style.display = show ? "flex" : "none";
 }
+
 
 
 
