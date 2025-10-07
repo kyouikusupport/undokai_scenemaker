@@ -439,6 +439,59 @@ function drawStudentGlyph(x, y, fill){
   ctx.lineWidth = 2; ctx.strokeStyle = stroke; ctx.stroke();
 }
 
+
+/** =========================
+ * トラック外形・縦線・分割線の描画関数
+ * ========================= */
+function drawTrackOutline() {
+  const { stadium, rect, R } = rects();
+  ctx.beginPath();
+  // 左半円
+  ctx.arc(rect.x, rect.y + R, R, Math.PI / 2, Math.PI * 1.5);
+  // 上辺
+  ctx.lineTo(rect.x + rect.w, rect.y);
+  // 右半円
+  ctx.arc(rect.x + rect.w, rect.y + R, R, Math.PI * 1.5, Math.PI / 2);
+  // 下辺
+  ctx.closePath();
+  ctx.strokeStyle = "#000000";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function drawRectVerticalEdges(fr) {
+  ctx.beginPath();
+  ctx.moveTo(fr.x, fr.y);
+  ctx.lineTo(fr.x, fr.y + fr.h);
+  ctx.moveTo(fr.x + fr.w, fr.y);
+  ctx.lineTo(fr.x + fr.w, fr.y + fr.h);
+  ctx.strokeStyle = "#000000";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function drawSplits(fr) {
+  const { xs, ys } = gridLines(fr);
+  ctx.strokeStyle = "#888";
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 2]);
+  xs.forEach(x => {
+    ctx.beginPath();
+    ctx.moveTo(x, fr.y);
+    ctx.lineTo(x, fr.y + fr.h);
+    ctx.stroke();
+  });
+  ys.forEach(y => {
+    ctx.beginPath();
+    ctx.moveTo(fr.x, y);
+    ctx.lineTo(fr.x + fr.w, y);
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);
+}
+
+
+
 /** =========================
  * 描画
  * ========================= */
@@ -2177,6 +2230,7 @@ function showLoading(show) {
   if (!overlay) return;
   overlay.style.display = show ? "flex" : "none";
 }
+
 
 
 
