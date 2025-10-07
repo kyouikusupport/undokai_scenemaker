@@ -2265,19 +2265,29 @@ el.gearIcon.addEventListener("click", () => {
 });
 
 // =============================
-// 公開URLから自動読み込み処理
+// 公開URLから自動読み込み処理（学年一致対応版）
 // =============================
 window.addEventListener("DOMContentLoaded", async () => {
   const params = new URLSearchParams(window.location.search);
   const schoolId = params.get("school");
-  const gradeName = params.get("grade");
+  const gradeNameRaw = params.get("grade");
 
-  if (schoolId && gradeName) {
-    console.log(`公開URLモード: ${schoolId} / ${gradeName}`);
+  if (schoolId && gradeNameRaw) {
+    console.log(`公開URLモード: ${schoolId} / ${gradeNameRaw}`);
+
+    // 全角→半角統一＆空白除去（比較ずれ対策）
+    const normalize = str =>
+      str
+        .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+        .replace(/\s+/g, "")
+        .trim();
+
+    const gradeName = normalize(gradeNameRaw);
+
     try {
       const payload = {
         action: "load",
-        schoolId: schoolId,
+        schoolId,
         grade: gradeName
       };
 
@@ -2289,13 +2299,32 @@ window.addEventListener("DOMContentLoaded", async () => {
 
       const json = await res.json();
 
+      console.group("📦 公開URLデバッグ");
+      console.log("要求学年:", gradeName);
+      console.log("返却grades一覧:", json.grades?.map(g => g.name));
+      console.groupEnd();
+
       if (json && json.field && json.grades) {
         state.field = json.field;
         state.grades = json.grades;
+
+        // === 一致する学年を検索 ===
+        const idx = json.grades.findIndex(
+          g => normalize(g.name) === gradeName
+        );
+
+        if (idx >= 0) {
+          state.currentGradeIndex = idx;
+          console.log(`✅ 一致した学年を選択: ${json.grades[idx].name}`);
+        } else {
+          state.currentGradeIndex = 0;
+          console.warn("⚠ 指定学年が見つからず、最初の学年を表示しました。");
+        }
+
         currentMode = MODES.VIEW;
         updateModeUI();
         refreshAllUI();
-        flash(`${gradeName} のシーンを読み込みました`);
+        flash(`${json.grades[state.currentGradeIndex].name} のシーンを読み込みました`);
       } else {
         flash("該当データが見つかりませんでした。");
       }
@@ -2305,6 +2334,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
 
 // =============================
 // 学年セレクト変更時の処理（最初のシーンを自動ロード）
@@ -2340,6 +2370,7 @@ function showLoading(show) {
   if (!overlay) return;
   overlay.style.display = show ? "flex" : "none";
 }
+
 
 
 
