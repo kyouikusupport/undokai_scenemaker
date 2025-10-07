@@ -2001,6 +2001,15 @@ async function validateSchool(code, pass) {
 
         // ---- データ反映 ----
         if (json2 && json2.field && json2.grades) {
+          console.group("🧩 ロード結果デバッグ");
+          console.log("学校ID:", code);
+          console.log("要求した学年:", loadPayload.grade);
+          console.log("受信した全学年データ一覧:");
+          json2.grades.forEach((g, i) => {
+            console.log(`  [${i}] name="${g.name}", roster=${g.roster?.length ?? 0}, scenes=${g.scenes?.length ?? 0}`);
+          });
+          console.groupEnd();
+          
           // 1️⃣ フィールドデータ
           state.field = json2.field || {};
 
@@ -2331,6 +2340,7 @@ function showLoading(show) {
   if (!overlay) return;
   overlay.style.display = show ? "flex" : "none";
 }
+
 
 
 
