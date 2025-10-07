@@ -1939,7 +1939,7 @@ function updateModeUI() {
 }
 
 // =============================
-// 学校ログイン認証（GAS連携）★複数学年＋初期シーン自動ロード＋ローディング表示対応版＋描写構造補完
+// 学校ログイン認証（GAS連携）★複数学年＋初期シーン自動ロード＋ローディング表示対応版＋描写構造補完＋公開URL優先対応版
 // =============================
 async function validateSchool(code, pass) {
   const payload = {
@@ -1964,6 +1964,16 @@ async function validateSchool(code, pass) {
       state.currentSchoolName = json.name;
       state.currentSchoolCode = code;
 
+      // -----------------------------
+      // 🔸 公開URL指定がある場合は優先
+      // -----------------------------
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlGrade = urlParams.get("grade");
+      const isPublicView = urlParams.has("school") && urlParams.has("grade");
+
+      // デバッグログ
+      console.log("🔍 URL指定の検出:", { isPublicView, urlGrade });
+
       if (code === "admin") {
         // 管理者モード
         currentMode = MODES.ADMIN;
@@ -1975,6 +1985,10 @@ async function validateSchool(code, pass) {
 
         // ---- ロードする学年を決定 ----
         let gradeName = "１年";
+        if (isPublicView && urlGrade) {
+          gradeName = urlGrade;
+          console.log("🌐 公開URLの学年を優先:", gradeName);
+        }
 
         // ---- 半角→全角変換関数（比較ずれ対策）----
         function toZenkakuNum(str) {
@@ -2032,9 +2046,10 @@ async function validateSchool(code, pass) {
             workingPositions: g.workingPositions || {}
           }));
 
-          // 3️⃣ デフォルトで「１年」を選択（存在しなければ先頭）
-          const idx = state.grades.findIndex(g => g.name === "１年");
+          // 3️⃣ 一致する学年を優先選択（公開URL優先）
+          const idx = state.grades.findIndex(g => g.name === toZenkakuNum(gradeName));
           state.currentGradeIndex = idx >= 0 ? idx : 0;
+          console.log("🎯 選択された学年:", state.grades[state.currentGradeIndex]?.name);
 
           // 4️⃣ UI更新
           refreshGradeSelect();
@@ -2090,8 +2105,6 @@ async function validateSchool(code, pass) {
     showLoading(false);
   }
 }
-
-
 
 el.loginBtn.addEventListener("click", async () => {
   const code = el.schoolCode.value.trim();
@@ -2370,6 +2383,7 @@ function showLoading(show) {
   if (!overlay) return;
   overlay.style.display = show ? "flex" : "none";
 }
+
 
 
 
