@@ -673,6 +673,68 @@ function draw() {
   ctx.restore();
 }
 
+/** =========================
+ * スマホ対応：ピンチズーム・ドラッグ（パン）
+ * ========================= */
+let touchState = {
+  isPanning: false,
+  startX: 0,
+  startY: 0,
+  lastDist: 0,
+  startScale: 1,
+};
+
+// 🔹 タッチ開始（1本指 or 2本指）
+el.canvas.addEventListener("touchstart", (e) => {
+  if (e.touches.length === 1) {
+    // 1本指 → パン開始
+    const t = e.touches[0];
+    touchState.isPanning = true;
+    touchState.startX = t.clientX;
+    touchState.startY = t.clientY;
+  } else if (e.touches.length === 2) {
+    // 2本指 → ピンチズーム開始
+    e.preventDefault();
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    touchState.lastDist = Math.hypot(dx, dy);
+    touchState.startScale = state.view.scale || 1;
+  }
+});
+
+// 🔹 タッチ移動
+el.canvas.addEventListener("touchmove", (e) => {
+  if (e.touches.length === 1 && touchState.isPanning) {
+    // パン操作
+    const t = e.touches[0];
+    const dx = t.clientX - touchState.startX;
+    const dy = t.clientY - touchState.startY;
+    state.view.x += dx;
+    state.view.y += dy;
+    touchState.startX = t.clientX;
+    touchState.startY = t.clientY;
+    draw();
+  } else if (e.touches.length === 2) {
+    // ピンチズーム操作
+    e.preventDefault();
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.hypot(dx, dy);
+    const zoomFactor = dist / touchState.lastDist;
+
+    // 拡大率を更新
+    const newScale = clamp(touchState.startScale * zoomFactor, 0.3, 3.0);
+    state.view.scale = newScale;
+    draw();
+  }
+});
+
+// 🔹 タッチ終了
+el.canvas.addEventListener("touchend", () => {
+  touchState.isPanning = false;
+});
+
+
 // =========================
 // 子どもポイント描画（●＋▲）
 // =========================
@@ -2453,6 +2515,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
