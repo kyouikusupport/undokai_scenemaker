@@ -34,17 +34,24 @@ const STUDENT_COLORS = [
 
 function defaultField(){
   return {
-    ratioH: 0.5, showSplit: true,
-    splitV: 2, splitH: 2,
+    ratioH: 0.5,
+    showSplit: true,
+    splitV: 2,
+    splitH: 2,
     markers: [],
     circles: [
-      {x: 0.35, y:0.5, r:0.07, color:"#000000"},
-      {x: 0.50, y:0.5, r:0.07, color:"#ff0000"},
-      {x: 0.65, y:0.5, r:0.07, color:"#0066ff"},
+      { x: 0.35, y: 0.5, r: 0.07, color: "#000000" },
+      { x: 0.50, y: 0.5, r: 0.07, color: "#ff0000" },
+      { x: 0.65, y: 0.5, r: 0.07, color: "#0066ff" },
     ],
+    // ★ 新しい描写要素
+    lines: [],        // 直線
+    rectangles: [],   // 四角（文字入り）
+    halfCircles: [],  // 半円
     snap: { enabled: true, px: 18 }
   };
 }
+
 
 // --- 一時的なダミー定義（後で本体が上書きされる） ---
 function currentGrade() { return state.grades[state.currentGradeIndex] || { roster: [], workingPositions: {}, scenes: [] }; }
@@ -132,23 +139,39 @@ state.multiSelect = {
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyNEi6MYQSura-q8fSMTfq4sNOj_VeSpeAWk5ykmjMZQ4CTstNF_PGPJBT8BQrK4ljy/exec";
 
 /** =========================
- * ストレージ
+ * ストレージ（保存処理）
  * ========================= */
 async function saveAll() {
-  const gradeObj = currentGrade(); // ← 現在選択中の学年データを取得
+  const gradeObj = currentGrade(); // 現在選択中の学年データ
   const gradeName = gradeObj?.name || "未設定";
+
+  // --- ★ フィールド構造補完（全描写要素を確実に含める） ---
+  if (!state.field) state.field = {};
+  if (!state.field.points) state.field.points = [];
+  if (!state.field.innerCircles) state.field.innerCircles = [];
+  if (!state.field.lines) state.field.lines = [];
+  if (!state.field.rectangles) state.field.rectangles = [];
+  if (!state.field.halfCircles) state.field.halfCircles = [];
+
+  // --- ★ 現在の学年データも安全化（空配列対策） ---
+  if (!gradeObj.roster) gradeObj.roster = [];
+  if (!gradeObj.scenes) gradeObj.scenes = [];
+  if (!gradeObj.workingPositions) gradeObj.workingPositions = {};
 
   const payload = {
     action: "save",
     schoolId: state.currentSchoolCode || "unknown",
     grade: gradeName,
     data: {
-      field: state.field,
-      grades: [gradeObj] // ← ★ 現在の学年のみを送信！
+      field: state.field,      // ← グランド全体（線・四角・半円を含む）
+      grades: [gradeObj]       // ← 現在の学年のみ保存
     }
   };
 
   try {
+    // --- 通信開始 ---
+    showLoading(true); // 読み込み中表示ON
+
     const res = await fetch(GAS_URL, {
       method: "POST",
       body: JSON.stringify(payload),
@@ -156,6 +179,8 @@ async function saveAll() {
     });
 
     const json = await res.json();
+    console.log("📤 保存レスポンス:", json);
+
     if (json.status === "ok") {
       flash(`${gradeName} のデータをスプレッドシートに保存しました`);
     } else {
@@ -163,9 +188,11 @@ async function saveAll() {
     }
   } catch (err) {
     alert("通信エラー: " + err.message);
+  } finally {
+    // --- 通信完了 ---
+    showLoading(false); // 読み込み中表示OFF
   }
 }
-
 
 
 /** =========================
@@ -421,10 +448,68 @@ function draw(){
   const fr = rects().rect;
 
   drawTrackOutline();           // トラックの線
-  drawRectVerticalEdges(fr);   // 縦線
+  drawRectVerticalEdges(fr);    // 縦線
   if(state.field.showSplit) drawSplits(fr);  // 分割線（縦横）
 
-  // 円（内側の円）
+  const rectBase = rects().rect;
+
+  // === 直線描画 ===
+  if (Array.isArray(state.field.lines)) {
+    state.field.lines.forEach(line => {
+      const x1 = rectBase.x + (line.x1 || 0) * rectBase.w;
+      const y1 = rectBase.y + (line.y1 || 0) * rectBase.h;
+      const x2 = rectBase.x + (line.x2 || 0) * rectBase.w;
+      const y2 = rectBase.y + (line.y2 || 0) * rectBase.h;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = line.color || "#000000";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+  }
+
+  // === 四角描画 ===
+  if (Array.isArray(state.field.rectangles)) {
+    state.field.rectangles.forEach(rect => {
+      const x = rectBase.x + (rect.x || 0) * rectBase.w;
+      const y = rectBase.y + (rect.y || 0) * rectBase.h;
+      const w = (rect.w || 0.1) * rectBase.w;
+      const h = (rect.h || 0.1) * rectBase.h;
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.strokeStyle = rect.color || "#000000";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 四角内の文字
+      if (rect.text) {
+        ctx.font = "16px sans-serif";
+        ctx.fillStyle = rect.color || "#000000";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(rect.text, x + w / 2, y + h / 2);
+      }
+    });
+  }
+
+  // === 半円描画 ===
+  if (Array.isArray(state.field.halfCircles)) {
+    state.field.halfCircles.forEach(half => {
+      const cx = rectBase.x + (half.cx || 0.5) * rectBase.w;
+      const cy = rectBase.y + (half.cy || 0.5) * rectBase.h;
+      const r = (half.r || 0.1) * rectBase.w;
+      const start = half.startAngle ?? 0;
+      const end = half.endAngle ?? Math.PI;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, start, end);
+      ctx.strokeStyle = half.color || "#000000";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+  }
+
+  // === 円（内側の円） ===
   state.field.circles.forEach((c,i)=>{
     const p = n2pRect(c.x, c.y);
     const rpx = c.r * rects().rect.w;
@@ -435,7 +520,7 @@ function draw(){
     }
   });
 
-  // 目印（markers）
+  // === 目印（markers） ===
   state.field.markers.forEach((m,i)=>{
     const p = n2pRect(m.x, m.y);
     ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI*2);
@@ -449,7 +534,7 @@ function draw(){
     }
   });
 
-  // 子どもポイント（名札は上に）
+  // === 子どもポイント（名札） ===
   const positions = currentPositions();
   ctx.font = `14px system-ui, "Noto Sans JP", sans-serif`;
   ctx.textAlign = "center"; ctx.textBaseline = "bottom";
@@ -459,6 +544,8 @@ function draw(){
     drawStudentGlyph(p.x, p.y, s.color || "#0066ff");
     ctx.fillStyle = "#111"; ctx.fillText(s.name, p.x, p.y - 10);
   });
+
+  // === 複数選択範囲 ===
   if(state.multiSelect.active){
     ctx.save();
     ctx.strokeStyle = "#1a56db";
@@ -471,6 +558,7 @@ function draw(){
     ctx.restore();
   }
 
+  // === 選択ハイライト ===
   state.multiSelect.selectedIds.forEach(id=>{
     const pos = currentPositions()[id];
     if(!pos) return;
@@ -481,58 +569,6 @@ function draw(){
     ctx.lineWidth = 2;
     ctx.stroke();
   });
-}
-
-function drawTrackOutline(){
-  const { rect, R } = rects();
-  const { x, y, w, h } = rect;
-  const cxL = x;
-  const cxR = x + w;
-  const cy  = y + h/2;
-
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x + w, y);
-  ctx.arc(cxR, cy, R, -Math.PI/2, Math.PI/2, false);
-  ctx.lineTo(x, y + h);
-  ctx.arc(cxL, cy, R, Math.PI/2, -Math.PI/2, false);
-  ctx.closePath();
-
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = "#343a40";
-  ctx.stroke();
-}
-function drawRectVerticalEdges(fr){
-  const {x,y,w,h} = fr;
-  ctx.beginPath();
-  ctx.moveTo(x, y); ctx.lineTo(x, y + h);
-  ctx.moveTo(x + w, y); ctx.lineTo(x + w, y + h);
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = "#343a40";
-  ctx.stroke();
-}
-function drawSplits(fr){
-  const {x,y,w,h} = fr;
-  const vCount = clamp((state.field.splitV|0), 0, 11);
-  const hCount = clamp((state.field.splitH|0), 0, 11);
-  ctx.setLineDash([]);
-  ctx.strokeStyle = "#adb5bd";
-  if(vCount > 0){
-    const stepX = w / (vCount + 1);
-    ctx.lineWidth = 2;
-    for(let i=1;i<=vCount;i++){
-      const px = x + stepX * i;
-      ctx.beginPath(); ctx.moveTo(px, y); ctx.lineTo(px, y+h); ctx.stroke();
-    }
-  }
-  if(hCount > 0){
-    const stepY = h / (hCount + 1);
-    ctx.lineWidth = 2;
-    for(let j=1;j<=hCount;j++){
-      const py = y + stepY * j;
-      ctx.beginPath(); ctx.moveTo(x, py); ctx.lineTo(x+w, py); ctx.stroke();
-    }
-  }
 }
 
 /** =========================
@@ -2141,6 +2177,7 @@ function showLoading(show) {
   if (!overlay) return;
   overlay.style.display = show ? "flex" : "none";
 }
+
 
 
 
