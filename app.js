@@ -439,58 +439,72 @@ function drawStudentGlyph(x, y, fill){
   ctx.lineWidth = 2; ctx.strokeStyle = stroke; ctx.stroke();
 }
 
-
 /** =========================
  * トラック外形・縦線・分割線の描画関数
  * ========================= */
 function drawTrackOutline() {
-  const { stadium, rect, R } = rects();
+  const { rect, R } = rects();  // ← stadium は未定義なので削除
+  const { x, y, w, h } = rect;
+  const cxL = x;        // 左の円中心
+  const cxR = x + w;    // 右の円中心
+  const cy  = y + h / 2; // 中心Y
+
   ctx.beginPath();
-  // 左半円
-  ctx.arc(rect.x, rect.y + R, R, Math.PI / 2, Math.PI * 1.5);
-  // 上辺
-  ctx.lineTo(rect.x + rect.w, rect.y);
-  // 右半円
-  ctx.arc(rect.x + rect.w, rect.y + R, R, Math.PI * 1.5, Math.PI / 2);
-  // 下辺
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + w, y);
+  ctx.arc(cxR, cy, R, -Math.PI / 2, Math.PI / 2, false);
+  ctx.lineTo(x, y + h);
+  ctx.arc(cxL, cy, R, Math.PI / 2, -Math.PI / 2, false);
   ctx.closePath();
-  ctx.strokeStyle = "#000000";
-  ctx.lineWidth = 2;
+
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "#343a40";
   ctx.stroke();
 }
 
 function drawRectVerticalEdges(fr) {
+  const { x, y, w, h } = fr;
   ctx.beginPath();
-  ctx.moveTo(fr.x, fr.y);
-  ctx.lineTo(fr.x, fr.y + fr.h);
-  ctx.moveTo(fr.x + fr.w, fr.y);
-  ctx.lineTo(fr.x + fr.w, fr.y + fr.h);
-  ctx.strokeStyle = "#000000";
-  ctx.lineWidth = 1;
+  ctx.moveTo(x, y);
+  ctx.lineTo(x, y + h);
+  ctx.moveTo(x + w, y);
+  ctx.lineTo(x + w, y + h);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#343a40";
   ctx.stroke();
 }
 
 function drawSplits(fr) {
-  const { xs, ys } = gridLines(fr);
-  ctx.strokeStyle = "#888";
-  ctx.lineWidth = 1;
-  ctx.setLineDash([4, 2]);
-  xs.forEach(x => {
-    ctx.beginPath();
-    ctx.moveTo(x, fr.y);
-    ctx.lineTo(x, fr.y + fr.h);
-    ctx.stroke();
-  });
-  ys.forEach(y => {
-    ctx.beginPath();
-    ctx.moveTo(fr.x, y);
-    ctx.lineTo(fr.x + fr.w, y);
-    ctx.stroke();
-  });
+  const { x, y, w, h } = fr;
+  const vCount = clamp((state.field.splitV | 0), 0, 11);
+  const hCount = clamp((state.field.splitH | 0), 0, 11);
   ctx.setLineDash([]);
+  ctx.strokeStyle = "#adb5bd";
+
+  if (vCount > 0) {
+    const stepX = w / (vCount + 1);
+    ctx.lineWidth = 2;
+    for (let i = 1; i <= vCount; i++) {
+      const px = x + stepX * i;
+      ctx.beginPath();
+      ctx.moveTo(px, y);
+      ctx.lineTo(px, y + h);
+      ctx.stroke();
+    }
+  }
+
+  if (hCount > 0) {
+    const stepY = h / (hCount + 1);
+    ctx.lineWidth = 2;
+    for (let j = 1; j <= hCount; j++) {
+      const py = y + stepY * j;
+      ctx.beginPath();
+      ctx.moveTo(x, py);
+      ctx.lineTo(x + w, py);
+      ctx.stroke();
+    }
+  }
 }
-
-
 
 /** =========================
  * 描画
@@ -2230,6 +2244,7 @@ function showLoading(show) {
   if (!overlay) return;
   overlay.style.display = show ? "flex" : "none";
 }
+
 
 
 
