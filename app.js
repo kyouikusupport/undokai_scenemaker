@@ -884,6 +884,23 @@ el.resetCirclesBtn.addEventListener("click", ()=>{
 });
 
 /** =========================
+ * グランド編集モード切替（クリック制御 改良版）
+ * ========================= */
+function updateEditClickPermission() {
+  const editableModes = ["none", "markers", "circles", "lines", "rectangles", "halfCircles"];
+  const isEditable = editableModes.includes(state.editMode);
+  const canvas = document.getElementById("canvas");
+
+  // Canvasは常にクリック可能（pointerEvents固定）
+  canvas.style.pointerEvents = "auto";
+
+  // 状態を保持（他イベントで参照する用）
+  state.isEditClickable = isEditable;
+
+  console.log(`🖱 クリック${isEditable ? "許可" : "無効（UI側で無視）"}（モード: ${state.editMode}）`);
+}
+
+/** =========================
  * シーンUI
  * ========================= */
 function refreshSceneTable(){
@@ -1153,49 +1170,50 @@ function pickStudent(px,py){
 let panDrag = null;
 let lastMouseX=0, lastMouseY=0;
 
-el.canvas.addEventListener("mousedown", (e)=>{
+el.canvas.addEventListener("mousedown", (e) => {
   const rect = el.canvas.getBoundingClientRect();
   const px = e.clientX - rect.left;
   const py = e.clientY - rect.top;
   const world = screenToWorld(px, py);
 
-  // ★ 回転モード中の操作
-  if(state.rotate.active){
-    if(e.button === 0){ // 左クリックで回転開始
+  // ------------------------------
+  // ① 回転モード
+  // ------------------------------
+  if (state.rotate.active) {
+    if (e.button === 0) {
       state.rotate.dragging = true;
       state.rotate.startAngle = Math.atan2(
         world.y - state.rotate.centerY,
         world.x - state.rotate.centerX
       );
-
-      // ★ 現在位置を新しい基準に保存し直す
       const pos = currentPositions();
       state.rotate.initialPositions = {};
-      state.multiSelect.selectedIds.forEach(id=>{
-        if(pos[id]){
-          state.rotate.initialPositions[id] = {x: pos[id].x, y: pos[id].y};
+      state.multiSelect.selectedIds.forEach((id) => {
+        if (pos[id]) {
+          state.rotate.initialPositions[id] = { x: pos[id].x, y: pos[id].y };
         }
       });
-
       return;
     }
-    if(e.button === 2){ // 右クリックで回転終了
+    if (e.button === 2) {
       e.preventDefault();
       state.rotate.active = false;
       state.rotate.dragging = false;
-      state.multiSelect.selectedIds = []; // 選択解除
+      state.multiSelect.selectedIds = [];
       draw();
       return;
     }
   }
 
-  // ★ 通常時の右クリック
-  if(e.button === 2){
+  // ------------------------------
+  // ② 右クリック処理（共通）
+  // ------------------------------
+  if (e.button === 2) {
     e.preventDefault();
-    if(state.multiSelect.selectedIds.length > 1){
+    if (state.multiSelect.selectedIds.length > 1) {
       const menu = document.getElementById("contextMenu");
       menu.style.left = e.pageX + "px";
-      menu.style.top  = e.pageY + "px";
+      menu.style.top = e.pageY + "px";
       menu.style.display = "block";
     } else {
       panDrag = { sx: px, sy: py, ox: state.view.x, oy: state.view.y };
@@ -1203,16 +1221,65 @@ el.canvas.addEventListener("mousedown", (e)=>{
     return;
   }
 
-  // ★ 左クリックで子ども選択や範囲選択
-  if(state.activeTab==="scenes" && state.studentEdit && e.button===0){
+  // ------------------------------
+  // ③ グランド編集モードのクリック処理
+  // ------------------------------
+  const editableModes = ["markers", "circles", "lines", "rectangles", "halfCircles"];
+  if (editableModes.includes(state.editMode)) {
+    e.preventDefault();
+
+    // 線（lines）
+    if (state.editMode === "lines") {
+      state.drawTemp = {
+        type: "line",
+        start: { x: world.x, y: world.y },
+        end: { x: world.x, y: world.y },
+        color: state.currentColor || "#000000"
+      };
+      state.dragging = "drawingLine";
+      return;
+    }
+
+    // 四角（rectangles）
+    if (state.editMode === "rectangles") {
+      state.drawTemp = {
+        type: "rect",
+        start: { x: world.x, y: world.y },
+        end: { x: world.x, y: world.y },
+        text: "",
+        color: state.currentColor || "#000000"
+      };
+      state.dragging = "drawingRect";
+      return;
+    }
+
+    // 半円（halfCircles）
+    if (state.editMode === "halfCircles") {
+      if (!state.tempHalfCircle) {
+        // 最初のクリック：中心
+        state.tempHalfCircle = { cx: world.x, cy: world.y };
+        flash("半円の中心を設定しました。弧の始点をクリックしてドラッグしてください。");
+      } else {
+        // 2回目：弧の描画開始
+        state.tempHalfCircle.start = { x: world.x, y: world.y };
+        state.dragging = "drawingHalfCircle";
+      }
+      return;
+    }
+  }
+
+  // ------------------------------
+  // ④ 子ども編集モード
+  // ------------------------------
+  if (state.activeTab === "scenes" && state.studentEdit && e.button === 0) {
     const id = pickStudent(world.x, world.y);
 
-    // Ctrl+クリック → 複数選択に追加/削除
-    if(e.ctrlKey || e.metaKey){
-      if(id){
+    // Ctrl+クリック → 複数選択
+    if (e.ctrlKey || e.metaKey) {
+      if (id) {
         const sel = state.multiSelect.selectedIds;
-        if(sel.includes(id)){
-          state.multiSelect.selectedIds = sel.filter(x=>x!==id);
+        if (sel.includes(id)) {
+          state.multiSelect.selectedIds = sel.filter((x) => x !== id);
         } else {
           state.multiSelect.selectedIds.push(id);
         }
@@ -1221,8 +1288,8 @@ el.canvas.addEventListener("mousedown", (e)=>{
       return;
     }
 
-    if(id){
-      state.dragging = { type:"student", id };
+    if (id) {
+      state.dragging = { type: "student", id };
       el.canvas.style.cursor = "grabbing";
     } else {
       state.multiSelect.selectedIds = [];
@@ -1234,6 +1301,7 @@ el.canvas.addEventListener("mousedown", (e)=>{
     }
   }
 });
+
 
 el.canvas.addEventListener("mousemove", (e)=>{
   lastMouseX = e.clientX;
@@ -2244,6 +2312,7 @@ function showLoading(show) {
   if (!overlay) return;
   overlay.style.display = show ? "flex" : "none";
 }
+
 
 
 
