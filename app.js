@@ -1631,6 +1631,14 @@ window.addEventListener("load", async () => {
       const data = typeof json === "string" ? JSON.parse(json) : json;
 
       state.field = data.field;
+      
+      if (!state.field) state.field = {};
+      if (!state.field.points) state.field.points = [];
+      if (!state.field.innerCircles) state.field.innerCircles = [];
+      if (!state.field.lines) state.field.lines = [];
+      if (!state.field.rectangles) state.field.rectangles = [];
+      if (!state.field.halfCircles) state.field.halfCircles = [];
+      
       state.grades = Array.isArray(data.grades)
         ? data.grades
         : Object.values(data.grades);
@@ -1741,7 +1749,7 @@ function updateModeUI() {
 }
 
 // =============================
-// 学校ログイン認証（GAS連携）★複数学年＋初期シーン自動ロード＋ローディング表示対応版
+// 学校ログイン認証（GAS連携）★複数学年＋初期シーン自動ロード＋ローディング表示対応版＋描写構造補完
 // =============================
 async function validateSchool(code, pass) {
   const payload = {
@@ -1751,7 +1759,7 @@ async function validateSchool(code, pass) {
   };
 
   try {
-    // ★ 追加：読み込み中表示ON
+    // ★ 読み込み中表示ON
     showLoading(true);
 
     const res = await fetch(GAS_URL, {
@@ -1804,22 +1812,26 @@ async function validateSchool(code, pass) {
         // ---- データ反映 ----
         if (json2 && json2.field && json2.grades) {
           // 1️⃣ フィールドデータ
-          state.field = json2.field;
+          state.field = json2.field || {};
+
+          // ★ 新しい描写構造を補完（points / circles / lines / rectangles / halfCircles）
+          if (!state.field.points) state.field.points = [];
+          if (!state.field.innerCircles) state.field.innerCircles = [];
+          if (!state.field.lines) state.field.lines = [];
+          if (!state.field.rectangles) state.field.rectangles = [];
+          if (!state.field.halfCircles) state.field.halfCircles = [];
 
           // 2️⃣ gradesを正規化してすべて格納
           const loadedGrades = Array.isArray(json2.grades)
             ? json2.grades
             : Object.values(json2.grades);
 
-          state.grades = []; // 一旦空に
-          loadedGrades.forEach((g, i) => {
-            state.grades.push({
-              name: g.name || `学年${i + 1}`,
-              roster: g.roster || [],
-              scenes: g.scenes || [],
-              workingPositions: g.workingPositions || {}
-            });
-          });
+          state.grades = loadedGrades.map((g, i) => ({
+            name: g.name || `学年${i + 1}`,
+            roster: g.roster || [],
+            scenes: g.scenes || [],
+            workingPositions: g.workingPositions || {}
+          }));
 
           // 3️⃣ デフォルトで「１年」を選択（存在しなければ先頭）
           const idx = state.grades.findIndex(g => g.name === "１年");
@@ -1835,7 +1847,7 @@ async function validateSchool(code, pass) {
           console.log("ロード完了時の学年一覧:", state.grades.map(g => g.name));
           flash("全学年データを読み込みました");
 
-          // ★ 追加：ページ初回ロード時に最初のシーンを自動ロード
+          // ★ 初期シーンを自動ロード
           const firstGrade = state.grades[state.currentGradeIndex];
           if (firstGrade && firstGrade.scenes && firstGrade.scenes.length > 0) {
             state.currentSceneIndex = 0;
@@ -1847,9 +1859,17 @@ async function validateSchool(code, pass) {
             flash(`${firstGrade.name} にシーンがありません。`);
           }
 
-          refreshAllUI(); // ★ 追加：再描画
+          refreshAllUI();
         } else {
           // ---- データがない場合（初回用） ----
+          state.field = {
+            points: [],
+            innerCircles: [],
+            lines: [],
+            rectangles: [],
+            halfCircles: []
+          };
+
           state.grades = [{ name: "１年", roster: [], scenes: [] }];
           state.currentGradeIndex = 0;
           refreshAllUI();
@@ -1867,10 +1887,11 @@ async function validateSchool(code, pass) {
     alert("通信エラーが発生しました: " + err.message);
     return false;
   } finally {
-    // ★ 追加：読み込み中表示OFF（正常終了でもエラーでも確実に消える）
+    // ★ 読み込み中表示OFF（正常終了でもエラーでも確実に消える）
     showLoading(false);
   }
 }
+
 
 
 el.loginBtn.addEventListener("click", async () => {
@@ -2120,6 +2141,7 @@ function showLoading(show) {
   if (!overlay) return;
   overlay.style.display = show ? "flex" : "none";
 }
+
 
 
 
