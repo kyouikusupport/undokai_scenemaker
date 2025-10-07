@@ -734,6 +734,10 @@ el.canvas.addEventListener("touchend", () => {
   touchState.isPanning = false;
 });
 
+// 値を範囲内に収める関数
+function clamp(v, min, max) {
+  return Math.min(Math.max(v, min), max);
+}
 
 // =========================
 // 子どもポイント描画（●＋▲）
@@ -2515,6 +2519,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
