@@ -1756,10 +1756,10 @@ el.canvas.addEventListener("mousemove", (e) => {
     const fr = rects().rect;
 
     // ✅ world(0〜1) → ピクセル変換
-    const x1 = fr.x + state.drawTemp.start.x * fr.w;
-    const y1 = fr.y + state.drawTemp.start.y * fr.h;
-    const x2 = fr.x + state.drawTemp.end.x * fr.w;
-    const y2 = fr.y + state.drawTemp.end.y * fr.h;
+    const x1 = state.drawTemp.start.x;
+    const y1 = state.drawTemp.start.y;
+    const x2 = state.drawTemp.end.x;
+    const y2 = state.drawTemp.end.y;
 
     // ✅ ログ（比較用）
     console.log(`✏️ [drawingLine] start=(${x1.toFixed(1)}, ${y1.toFixed(1)}) end=(${x2.toFixed(1)}, ${y2.toFixed(1)})`);
@@ -2916,6 +2916,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
