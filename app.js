@@ -1512,10 +1512,100 @@ el.canvas.addEventListener("mousemove", (e) => {
 });
 
 window.addEventListener("mouseup", (e) => {
-  if (e.button === 2) {
-    panDrag = null;
+  // ------------------------------
+  // ★ グランド編集モードで描画確定
+  // ------------------------------
+  if (state.dragging === "drawingLine" && state.drawTemp?.type === "line") {
+    const temp = state.drawTemp;
+    const fr = rects().rect;
+
+    // 正規化して保存
+    state.field.lines.push({
+      x1: (temp.start.x - fr.x) / fr.w,
+      y1: (temp.start.y - fr.y) / fr.h,
+      x2: (temp.end.x - fr.x) / fr.w,
+      y2: (temp.end.y - fr.y) / fr.h,
+      color: temp.color || "#000000"
+    });
+
+    console.log("✅ 線を追加:", state.field.lines[state.field.lines.length - 1]);
+    state.drawTemp = null;
+    state.dragging = null;
+    draw();
+    return;
   }
+
+  if (state.dragging === "drawingRect" && state.drawTemp?.type === "rect") {
+    const temp = state.drawTemp;
+    const fr = rects().rect;
+
+    // 正規化して保存
+    const x = Math.min(temp.start.x, temp.end.x);
+    const y = Math.min(temp.start.y, temp.end.y);
+    const w = Math.abs(temp.end.x - temp.start.x);
+    const h = Math.abs(temp.end.y - temp.start.y);
+
+    state.field.rectangles.push({
+      x: (x - fr.x) / fr.w,
+      y: (y - fr.y) / fr.h,
+      w: w / fr.w,
+      h: h / fr.h,
+      text: temp.text || "",
+      color: temp.color || "#000000"
+    });
+
+    console.log("✅ 四角を追加:", state.field.rectangles[state.field.rectangles.length - 1]);
+    state.drawTemp = null;
+    state.dragging = null;
+    draw();
+    return;
+  }
+
+  if (state.dragging === "drawingHalfCircle" && state.tempHalfCircle?.start) {
+    const fr = rects().rect;
+    const center = state.tempHalfCircle;
+    const end = screenToWorld(lastMouseX, lastMouseY);
+
+    const dx = end.x - center.cx;
+    const dy = end.y - center.cy;
+    const r = Math.sqrt(dx * dx + dy * dy);
+
+    const startAngle = Math.atan2(center.start.y - center.cy, center.start.x - center.cx);
+    const endAngle = Math.atan2(end.y - center.cy, end.x - center.cx);
+
+    state.field.halfCircles.push({
+      cx: (center.cx - fr.x) / fr.w,
+      cy: (center.cy - fr.y) / fr.h,
+      r: r / fr.w,
+      startAngle,
+      endAngle,
+      color: state.currentColor || "#000000"
+    });
+
+    console.log("✅ 半円を追加:", state.field.halfCircles[state.field.halfCircles.length - 1]);
+    state.tempHalfCircle = null;
+    state.dragging = null;
+    draw();
+    return;
+  }
+
+  // ------------------------------
+  // 既存のマウスアップ処理（子ども選択・パンなど）
+  // ------------------------------
+  if (state.multiSelect.active) {
+    state.multiSelect.active = false;
+    draw();
+  }
+  if (state.dragging) {
+    state.dragging = null;
+    el.canvas.style.cursor = "default";
+  }
+  if (state.rotate.dragging) {
+    state.rotate.dragging = false;
+  }
+  panDrag = null;
 });
+
 
 
 el.canvas.addEventListener("mousemove", (e) => {
@@ -2638,6 +2728,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
