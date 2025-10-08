@@ -1735,30 +1735,25 @@ el.canvas.addEventListener("mousemove", (e) => {
   // グランド編集：ドラッグ中プレビュー描画
   // ------------------------------
   if (state.dragging === "drawingLine" && state.drawTemp) {
-    // 現在のマウス位置を保存
     state.drawTemp.end = { x: world.x, y: world.y };
-
-    // 一度通常描画
     draw();
 
-    // プレビュー線描画
     const ctx2 = el.canvas.getContext("2d");
     ctx2.save();
 
-    // devicePixelRatio補正
-    const dpr = window.devicePixelRatio || 1;
-    ctx2.scale(dpr, dpr);
-
-    // rect変換（キャンバス内位置に変換）
-    const p1 = n2pRect(state.drawTemp.start.x, state.drawTemp.start.y);
-    const p2 = n2pRect(world.x, world.y);
+    const fr = rects().rect;
+    const x1 = fr.x + state.drawTemp.start.x * fr.w;
+    const y1 = fr.y + state.drawTemp.start.y * fr.h;
+    const x2 = fr.x + world.x * fr.w;
+    const y2 = fr.y + world.y * fr.h;
 
     ctx2.beginPath();
-    ctx2.moveTo(p1.x, p1.y);
-    ctx2.lineTo(p2.x, p2.y);
+    ctx2.moveTo(x1, y1);
+    ctx2.lineTo(x2, y2);
     ctx2.strokeStyle = state.drawTemp.color || "#000000";
     ctx2.lineWidth = 2;
     ctx2.stroke();
+
     ctx2.restore();
     return;
   }
@@ -1770,21 +1765,23 @@ el.canvas.addEventListener("mousemove", (e) => {
     const ctx2 = el.canvas.getContext("2d");
     ctx2.save();
 
-    const dpr = window.devicePixelRatio || 1;
-    ctx2.scale(dpr, dpr);
+    const fr = rects().rect;
+    const x1 = fr.x + state.drawTemp.start.x * fr.w;
+    const y1 = fr.y + state.drawTemp.start.y * fr.h;
+    const x2 = fr.x + world.x * fr.w;
+    const y2 = fr.y + world.y * fr.h;
 
-    const p1 = n2pRect(state.drawTemp.start.x, state.drawTemp.start.y);
-    const p2 = n2pRect(world.x, world.y);
-    const x = Math.min(p1.x, p2.x);
-    const y = Math.min(p1.y, p2.y);
-    const w = Math.abs(p2.x - p1.x);
-    const h = Math.abs(p2.y - p1.y);
+    const x = Math.min(x1, x2);
+    const y = Math.min(y1, y2);
+    const w = Math.abs(x2 - x1);
+    const h = Math.abs(y2 - y1);
 
     ctx2.beginPath();
     ctx2.rect(x, y, w, h);
     ctx2.strokeStyle = state.drawTemp.color || "#000000";
     ctx2.lineWidth = 2;
     ctx2.stroke();
+
     ctx2.restore();
     return;
   }
@@ -1795,22 +1792,24 @@ el.canvas.addEventListener("mousemove", (e) => {
     const ctx2 = el.canvas.getContext("2d");
     ctx2.save();
 
-    const dpr = window.devicePixelRatio || 1;
-    ctx2.scale(dpr, dpr);
+    const fr = rects().rect;
+    const cx = fr.x + state.tempHalfCircle.cx * fr.w;
+    const cy = fr.y + state.tempHalfCircle.cy * fr.h;
+    const sx = fr.x + state.tempHalfCircle.start.x * fr.w;
+    const sy = fr.y + state.tempHalfCircle.start.y * fr.h;
+    const ex = fr.x + world.x * fr.w;
+    const ey = fr.y + world.y * fr.h;
 
-    const pCenter = n2pRect(state.tempHalfCircle.cx, state.tempHalfCircle.cy);
-    const pStart = n2pRect(state.tempHalfCircle.start.x, state.tempHalfCircle.start.y);
-    const pEnd = n2pRect(world.x, world.y);
-
-    const r = Math.hypot(pStart.x - pCenter.x, pStart.y - pCenter.y);
-    const startAngle = Math.atan2(pStart.y - pCenter.y, pStart.x - pCenter.x);
-    const endAngle = Math.atan2(pEnd.y - pCenter.y, pEnd.x - pCenter.x);
+    const r = Math.hypot(sx - cx, sy - cy);
+    const startAngle = Math.atan2(sy - cy, sx - cx);
+    const endAngle = Math.atan2(ey - cy, ex - cx);
 
     ctx2.beginPath();
-    ctx2.arc(pCenter.x, pCenter.y, r, startAngle, endAngle);
+    ctx2.arc(cx, cy, r, startAngle, endAngle);
     ctx2.strokeStyle = "#000000";
     ctx2.lineWidth = 2;
     ctx2.stroke();
+
     ctx2.restore();
     return;
   }
@@ -2895,6 +2894,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
