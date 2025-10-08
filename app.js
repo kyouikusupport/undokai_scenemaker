@@ -1820,34 +1820,46 @@ el.canvas.addEventListener("mousemove", (e) => {
   }
 
 
+  // ------------------------------
+  // グランド編集：ドラッグ中プレビュー描画（半円）
+  // ------------------------------
   if (state.dragging === "drawingHalfCircle" && state.tempHalfCircle?.start) {
-    draw();
+    // 現在のマウス位置を取得
+    const cx = state.tempHalfCircle.cx;
+    const cy = state.tempHalfCircle.cy;
+    const start = state.tempHalfCircle.start;
+    const end = world;
+
+    const dx = start.x - cx;
+    const dy = start.y - cy;
+    const r = Math.hypot(dx, dy);
+    const startAngle = Math.atan2(start.y - cy, start.x - cx);
+    const endAngle = Math.atan2(end.y - cy, end.x - cx);
 
     const ctx2 = el.canvas.getContext("2d");
     ctx2.save();
-    ctx2.setTransform(1, 0, 0, 1, 0, 0); // ← transformリセット
 
-    const fr = rects().rect;
-    const cx = fr.x + state.tempHalfCircle.cx;
-    const cy = fr.y + state.tempHalfCircle.cy;
-    const sx = fr.x + state.tempHalfCircle.start.x;
-    const sy = fr.y + state.tempHalfCircle.start.y;
-    const ex = fr.x + world.x * fr.w;
-    const ey = fr.y + world.y * fr.h;
+    // ✅ ビュー変換を適用（ズーム・パン対応）
+    applyViewTransform();
 
-    const r = Math.hypot(sx - cx, sy - cy);
-    const startAngle = Math.atan2(sy - cy, sx - cx);
-    const endAngle = Math.atan2(ey - cy, ex - cx);
+    // ✅ 背景を保持したまま再描画
+    ctx2.clearRect(0, 0, el.canvas.width, el.canvas.height);
+    draw();
 
+    // ✅ 半円プレビューを描画
     ctx2.beginPath();
     ctx2.arc(cx, cy, r, startAngle, endAngle);
     ctx2.strokeStyle = "#000000";
     ctx2.lineWidth = 2;
     ctx2.stroke();
 
+    // 🔍 デバッグログ
+    console.log(`◐ [drawingHalfCircle] center=(${cx.toFixed(1)},${cy.toFixed(1)}) r=${r.toFixed(1)} start=${startAngle.toFixed(2)} end=${endAngle.toFixed(2)}`);
+
     ctx2.restore();
     return;
   }
+
 
   // ------------------------------
   // 回転中
@@ -2931,6 +2943,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
