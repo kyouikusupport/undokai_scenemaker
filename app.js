@@ -1944,16 +1944,16 @@ function fitCanvas() {
   const wrap = el.canvas.parentElement;
   const rect = wrap.getBoundingClientRect();
 
-  // 固定アスペクト比（1400:800 = 1.75）
+  // 固定アスペクト比（1400:800）
   const baseW = 1400;
   const baseH = 800;
   const aspect = baseH / baseW;
 
-  // 表示領域サイズを取得
+  // 表示領域の幅・高さを取得
   const availableW = rect.width;
   const availableH = window.innerHeight - 180;
 
-  // 表示領域内でアスペクト比を維持して最大化
+  // アスペクト比を維持しながら最大化（はみ出し防止）
   let cssW = availableW;
   let cssH = cssW * aspect;
   if (cssH > availableH) {
@@ -1961,11 +1961,10 @@ function fitCanvas() {
     cssW = cssH / aspect;
   }
 
-  // Canvasの実ピクセルサイズ設定（高DPI対応）
+  // Canvasサイズ設定
   el.canvas.width = Math.round(cssW * dpr);
   el.canvas.height = Math.round(cssH * dpr);
 
-  // CSSサイズを統一
   el.canvas.style.width = cssW + "px";
   el.canvas.style.height = cssH + "px";
 
@@ -1974,10 +1973,13 @@ function fitCanvas() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.scale(dpr, dpr);
 
+  // ★ 中央配置を保証
+  el.canvas.style.display = "block";
+  el.canvas.style.margin = "0 auto";
+
   draw();
 }
 
-// 画面リサイズ時・初回ロード時に適用
 window.addEventListener("resize", fitCanvas);
 window.addEventListener("DOMContentLoaded", fitCanvas);
 
@@ -2574,6 +2576,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
