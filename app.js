@@ -1380,6 +1380,9 @@ el.canvas.addEventListener("mousedown", (e) => {
   const py = e.clientY - rect.top;
   const world = screenToWorld(px, py);
 
+  console.log(`🖱️ [mousedown] ボタン=${e.button}, mode=${state.editMode}, x=${world.x.toFixed(3)}, y=${world.y.toFixed(3)}`);
+
+
   // =============================
   // 図形をクリック・ホバーで検出する関数
   // =============================
@@ -1720,6 +1723,10 @@ el.canvas.addEventListener("mousemove", (e) => {
   const px = e.clientX - rect.left;
   const py = e.clientY - rect.top;
   const world = screenToWorld(px, py);
+
+  if (state.dragging) {
+    console.log(`✏️ [mousemove] dragging=${state.dragging} → (${world.x.toFixed(3)}, ${world.y.toFixed(3)})`);
+  }
   
   // === カーソルの形を変更（図形の上にあるとき） ===
   if (state.editMode && state.editMode !== "none") {
@@ -1915,6 +1922,8 @@ window.addEventListener("mouseup", (e) => {
   const px = e.clientX - rect.left;
   const py = e.clientY - rect.top;
   const world = screenToWorld(px, py);
+
+  console.log(`🖐️ [mouseup] dragging=${state.dragging}, drawTemp=${!!state.drawTemp}, tempHalf=${!!state.tempHalfCircle}`);
 
   // ------------------------------
   // グランド編集：確定処理
@@ -2894,6 +2903,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
