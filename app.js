@@ -1332,6 +1332,25 @@ el.canvas.addEventListener("mousedown", (e) => {
   const world = screenToWorld(px, py);
 
   // ------------------------------
+  // ★ 0. グランド描写モード時の特別処理
+  // ------------------------------
+  if (state.editMode === "none") {
+    e.preventDefault();
+
+    // 右クリック時はパンを許可
+    if (e.button === 2) {
+      panDrag = { sx: px, sy: py, ox: state.view.x, oy: state.view.y };
+      didRightDrag = false;
+      return;
+    }
+
+    // 左クリックは子ども選択等を無効化して描写用クリックを通す
+    console.log(`🖊 グランド描写クリック: x=${world.x.toFixed(3)}, y=${world.y.toFixed(3)}`);
+    // ※ここに今後グランド描写クリック処理を追加する場合はこの下に書く
+    return;
+  }
+
+  // ------------------------------
   // ① 回転モード
   // ------------------------------
   if (state.rotate.active) {
@@ -2619,6 +2638,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
