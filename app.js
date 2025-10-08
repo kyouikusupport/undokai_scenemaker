@@ -1758,7 +1758,7 @@ el.canvas.addEventListener("mousemove", (e) => {
     const y1 = fr.y + state.drawTemp.start.y * fr.h;
     const x2 = fr.x + world.x * fr.w;
     const y2 = fr.y + world.y * fr.h;
-    console.log(`✏️ [drawingLine] start=(${sx.toFixed(1)},${sy.toFixed(1)}) end=(${ex.toFixed(1)},${ey.toFixed(1)})`);
+    console.log(`✏️ [drawingLine] start=(${x1.toFixed(1)},${y1.toFixed(1)}) end=(${x2.toFixed(1)},${y2.toFixed(1)})`);
 
     ctx2.beginPath();
     ctx2.moveTo(x1, y1);
@@ -2911,6 +2911,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
