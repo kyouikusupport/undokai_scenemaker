@@ -1688,27 +1688,38 @@ el.canvas.addEventListener("mousemove", (e) => {
   if (state.dragging === "drawingLine" && state.drawTemp) {
     state.drawTemp.end = { x: world.x, y: world.y };
     draw();
+
     const ctx2 = el.canvas.getContext("2d");
+    const p1 = n2pRect(state.drawTemp.start.x, state.drawTemp.start.y);
+    const p2 = n2pRect(world.x, world.y);
+
     ctx2.save();
     ctx2.beginPath();
-    ctx2.moveTo(state.drawTemp.start.x, state.drawTemp.start.y);
-    ctx2.lineTo(world.x, world.y);
+    ctx2.moveTo(p1.x, p1.y);
+    ctx2.lineTo(p2.x, p2.y);
     ctx2.strokeStyle = state.drawTemp.color;
     ctx2.lineWidth = 2;
     ctx2.stroke();
     ctx2.restore();
     return;
   }
+
 
   if (state.dragging === "drawingRect" && state.drawTemp) {
     state.drawTemp.end = { x: world.x, y: world.y };
     draw();
+
     const ctx2 = el.canvas.getContext("2d");
-    const sx = state.drawTemp.start.x, sy = state.drawTemp.start.y;
-    const w = world.x - sx, h = world.y - sy;
+    const p1 = n2pRect(state.drawTemp.start.x, state.drawTemp.start.y);
+    const p2 = n2pRect(world.x, world.y);
+    const x = Math.min(p1.x, p2.x);
+    const y = Math.min(p1.y, p2.y);
+    const w = Math.abs(p2.x - p1.x);
+    const h = Math.abs(p2.y - p1.y);
+
     ctx2.save();
     ctx2.beginPath();
-    ctx2.rect(sx, sy, w, h);
+    ctx2.rect(x, y, w, h);
     ctx2.strokeStyle = state.drawTemp.color;
     ctx2.lineWidth = 2;
     ctx2.stroke();
@@ -1716,26 +1727,29 @@ el.canvas.addEventListener("mousemove", (e) => {
     return;
   }
 
+
   if (state.dragging === "drawingHalfCircle" && state.tempHalfCircle?.start) {
     draw();
     const ctx2 = el.canvas.getContext("2d");
-    const cx = state.tempHalfCircle.cx;
-    const cy = state.tempHalfCircle.cy;
-    const start = state.tempHalfCircle.start;
-    const dx = world.x - cx;
-    const dy = world.y - cy;
-    const r = Math.hypot(dx, dy);
-    const startAngle = Math.atan2(start.y - cy, start.x - cx);
-    const endAngle = Math.atan2(world.y - cy, world.x - cx);
+
+    const pCenter = n2pRect(state.tempHalfCircle.cx, state.tempHalfCircle.cy);
+    const pStart = n2pRect(state.tempHalfCircle.start.x, state.tempHalfCircle.start.y);
+    const pEnd = n2pRect(world.x, world.y);
+
+    const r = Math.hypot(pStart.x - pCenter.x, pStart.y - pCenter.y);
+    const startAngle = Math.atan2(pStart.y - pCenter.y, pStart.x - pCenter.x);
+    const endAngle = Math.atan2(pEnd.y - pCenter.y, pEnd.x - pCenter.x);
+
     ctx2.save();
     ctx2.beginPath();
-    ctx2.arc(cx, cy, r, startAngle, endAngle);
+    ctx2.arc(pCenter.x, pCenter.y, r, startAngle, endAngle);
     ctx2.strokeStyle = "#000000";
     ctx2.lineWidth = 2;
     ctx2.stroke();
     ctx2.restore();
     return;
   }
+
 
   // ------------------------------
   // 回転中
@@ -1843,11 +1857,17 @@ window.addEventListener("mouseup", (e) => {
   // ------------------------------
   if (state.dragging === "drawingLine" && state.drawTemp) {
     const { start, end, color } = state.drawTemp;
+    const fr = rects().rect;
+
+    // rect基準に正規化して保存
     state.field.lines.push({
-      x1: start.x, y1: start.y,
-      x2: end.x, y2: end.y,
+      x1: (start.x - fr.x) / fr.w,
+      y1: (start.y - fr.y) / fr.h,
+      x2: (end.x - fr.x) / fr.w,
+      y2: (end.y - fr.y) / fr.h,
       color
     });
+
     state.drawTemp = null;
     state.dragging = null;
     draw();
@@ -1856,14 +1876,23 @@ window.addEventListener("mouseup", (e) => {
 
   if (state.dragging === "drawingRect" && state.drawTemp) {
     const { start, end, color } = state.drawTemp;
+    const fr = rects().rect;
+
+    const x = Math.min(start.x, end.x);
+    const y = Math.min(start.y, end.y);
+    const w = Math.abs(end.x - start.x);
+    const h = Math.abs(end.y - start.y);
+
+    // rect基準に正規化して保存
     state.field.rectangles.push({
-      x: Math.min(start.x, end.x),
-      y: Math.min(start.y, end.y),
-      w: Math.abs(end.x - start.x),
-      h: Math.abs(end.y - start.y),
+      x: (x - fr.x) / fr.w,
+      y: (y - fr.y) / fr.h,
+      w: w / fr.w,
+      h: h / fr.h,
       color,
       text: ""
     });
+
     state.drawTemp = null;
     state.dragging = null;
     draw();
@@ -1871,6 +1900,7 @@ window.addEventListener("mouseup", (e) => {
   }
 
   if (state.dragging === "drawingHalfCircle" && state.tempHalfCircle?.start) {
+    const fr = rects().rect;
     const cx = state.tempHalfCircle.cx;
     const cy = state.tempHalfCircle.cy;
     const start = state.tempHalfCircle.start;
@@ -1879,16 +1909,23 @@ window.addEventListener("mouseup", (e) => {
     const r = Math.hypot(dx, dy);
     const startAngle = Math.atan2(start.y - cy, start.x - cx);
     const endAngle = Math.atan2(world.y - cy, world.x - cx);
+
+    // rect基準に正規化して保存
     state.field.halfCircles.push({
-      cx, cy, r,
-      startAngle, endAngle,
+      cx: (cx - fr.x) / fr.w,
+      cy: (cy - fr.y) / fr.h,
+      r: r / fr.w,
+      startAngle,
+      endAngle,
       color: "#000000"
     });
+
     state.tempHalfCircle = null;
     state.dragging = null;
     draw();
     return;
   }
+
 
   // ------------------------------
   // 通常の選択・パン解除
@@ -2793,6 +2830,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
