@@ -1944,31 +1944,43 @@ function fitCanvas() {
   const wrap = el.canvas.parentElement;
   const rect = wrap.getBoundingClientRect();
 
-  // ★ 元のアスペクト比（横1400:縦800）
-  const aspect = 800 / 1400;
+  // 固定アスペクト比（1400:800 = 1.75）
+  const baseW = 1400;
+  const baseH = 800;
+  const aspect = baseH / baseW;
 
-  // ★ 表示領域の幅を取得
-  const cssW = rect.width;
+  // 表示領域サイズを取得
+  const availableW = rect.width;
+  const availableH = window.innerHeight - 180;
 
-  // ★ 高さをアスペクト比から自動算出
-  const cssH = cssW * aspect;
+  // 表示領域内でアスペクト比を維持して最大化
+  let cssW = availableW;
+  let cssH = cssW * aspect;
+  if (cssH > availableH) {
+    cssH = availableH;
+    cssW = cssH / aspect;
+  }
 
-  // ★ 実ピクセルサイズを設定（高解像度対応）
+  // Canvasの実ピクセルサイズ設定（高DPI対応）
   el.canvas.width = Math.round(cssW * dpr);
   el.canvas.height = Math.round(cssH * dpr);
 
-  // ★ CSSサイズを一致させる（比率を維持）
+  // CSSサイズを統一
   el.canvas.style.width = cssW + "px";
   el.canvas.style.height = cssH + "px";
 
-  // ★ DPIスケーリング補正
+  // DPI補正
   const ctx = el.canvas.getContext("2d");
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.scale(dpr, dpr);
 
   draw();
 }
+
+// 画面リサイズ時・初回ロード時に適用
 window.addEventListener("resize", fitCanvas);
+window.addEventListener("DOMContentLoaded", fitCanvas);
+
 
 // --- URLパラメータによる閲覧モード起動（ローディング表示付き）---
 window.addEventListener("load", async () => {
@@ -2562,6 +2574,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
