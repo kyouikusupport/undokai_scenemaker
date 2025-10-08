@@ -1743,25 +1743,27 @@ el.canvas.addEventListener("mousemove", (e) => {
   }
 
   // ------------------------------
-  // グランド編集：ドラッグ中プレビュー描画（正規化座標→ピクセル座標変換修正版）
+  // グランド編集：ドラッグ中プレビュー描画（ズレ補正付き）
   // ------------------------------
   if (state.dragging === "drawingLine" && state.drawTemp) {
+    // 現在のマウス位置を更新
     state.drawTemp.end = { x: world.x, y: world.y };
+
+    // 通常描画
     draw();
 
     const ctx2 = el.canvas.getContext("2d");
     ctx2.save();
-    ctx2.setTransform(1, 0, 0, 1, 0, 0); // transformリセット
 
-    const fr = rects().rect;
+    // ✅ ビュー変換を適用（draw()と同じ座標系で描画）
+    applyViewTransform();
 
-    // ✅ world(0〜1) → ピクセル変換
     const x1 = state.drawTemp.start.x;
     const y1 = state.drawTemp.start.y;
     const x2 = state.drawTemp.end.x;
     const y2 = state.drawTemp.end.y;
 
-    // ✅ ログ（比較用）
+    // デバッグログ
     console.log(`✏️ [drawingLine] start=(${x1.toFixed(1)}, ${y1.toFixed(1)}) end=(${x2.toFixed(1)}, ${y2.toFixed(1)})`);
 
     ctx2.beginPath();
@@ -1774,6 +1776,7 @@ el.canvas.addEventListener("mousemove", (e) => {
     ctx2.restore();
     return;
   }
+
 
 
   if (state.dragging === "drawingRect" && state.drawTemp) {
@@ -2916,6 +2919,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
