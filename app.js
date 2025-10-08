@@ -1743,7 +1743,7 @@ el.canvas.addEventListener("mousemove", (e) => {
   }
 
   // ------------------------------
-  // グランド編集：ドラッグ中プレビュー描画（グランド保持版）
+  // グランド編集：ドラッグ中プレビュー描画（直線）
   // ------------------------------
   if (state.dragging === "drawingLine" && state.drawTemp) {
     state.drawTemp.end = { x: world.x, y: world.y };
@@ -1779,25 +1779,36 @@ el.canvas.addEventListener("mousemove", (e) => {
     return;
   }
 
+  // ------------------------------
+  // グランド編集：ドラッグ中プレビュー描画（四角）
+  // ------------------------------
   if (state.dragging === "drawingRect" && state.drawTemp) {
     state.drawTemp.end = { x: world.x, y: world.y };
-    draw();
 
     const ctx2 = el.canvas.getContext("2d");
     ctx2.save();
-    ctx2.setTransform(1, 0, 0, 1, 0, 0); // ← transformリセット
 
-    const fr = rects().rect;
-    const x1 = fr.x + state.drawTemp.start.x;
-    const y1 = fr.y + state.drawTemp.start.y;
-    const x2 = fr.x + world.x;
-    const y2 = fr.y + world.y;
+    // ✅ ビュー変換を適用
+    applyViewTransform();
+
+    // ✅ 背景を保持したまま再描画
+    ctx2.clearRect(0, 0, el.canvas.width, el.canvas.height);
+    draw();
+
+    // ✅ world座標をそのまま使用
+    const x1 = state.drawTemp.start.x;
+    const y1 = state.drawTemp.start.y;
+    const x2 = state.drawTemp.end.x;
+    const y2 = state.drawTemp.end.y;
 
     const x = Math.min(x1, x2);
     const y = Math.min(y1, y2);
     const w = Math.abs(x2 - x1);
     const h = Math.abs(y2 - y1);
 
+    console.log(`🟦 [drawingRect] (${x.toFixed(1)},${y.toFixed(1)}) → (${(x+w).toFixed(1)},${(y+h).toFixed(1)})`);
+
+    // ✅ プレビュー描画
     ctx2.beginPath();
     ctx2.rect(x, y, w, h);
     ctx2.strokeStyle = state.drawTemp.color || "#000000";
@@ -1807,6 +1818,7 @@ el.canvas.addEventListener("mousemove", (e) => {
     ctx2.restore();
     return;
   }
+
 
   if (state.dragging === "drawingHalfCircle" && state.tempHalfCircle?.start) {
     draw();
@@ -2919,6 +2931,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
