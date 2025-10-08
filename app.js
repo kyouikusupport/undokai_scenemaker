@@ -1743,7 +1743,7 @@ el.canvas.addEventListener("mousemove", (e) => {
   }
 
   // ------------------------------
-  // グランド編集：ドラッグ中プレビュー描画（ビュー変換リセット付き）
+  // グランド編集：ドラッグ中プレビュー描画（正規化座標→ピクセル座標変換修正版）
   // ------------------------------
   if (state.dragging === "drawingLine" && state.drawTemp) {
     state.drawTemp.end = { x: world.x, y: world.y };
@@ -1751,14 +1751,18 @@ el.canvas.addEventListener("mousemove", (e) => {
 
     const ctx2 = el.canvas.getContext("2d");
     ctx2.save();
-    ctx2.setTransform(1, 0, 0, 1, 0, 0); // ← transformリセット
+    ctx2.setTransform(1, 0, 0, 1, 0, 0); // transformリセット
 
     const fr = rects().rect;
+
+    // ✅ world(0〜1) → ピクセル変換
     const x1 = fr.x + state.drawTemp.start.x * fr.w;
     const y1 = fr.y + state.drawTemp.start.y * fr.h;
-    const x2 = fr.x + world.x * fr.w;
-    const y2 = fr.y + world.y * fr.h;
-    console.log(`✏️ [drawingLine] start=(${x1.toFixed(1)},${y1.toFixed(1)}) end=(${x2.toFixed(1)},${y2.toFixed(1)})`);
+    const x2 = fr.x + state.drawTemp.end.x * fr.w;
+    const y2 = fr.y + state.drawTemp.end.y * fr.h;
+
+    // ✅ ログ（比較用）
+    console.log(`✏️ [drawingLine] start=(${x1.toFixed(1)}, ${y1.toFixed(1)}) end=(${x2.toFixed(1)}, ${y2.toFixed(1)})`);
 
     ctx2.beginPath();
     ctx2.moveTo(x1, y1);
@@ -1770,6 +1774,7 @@ el.canvas.addEventListener("mousemove", (e) => {
     ctx2.restore();
     return;
   }
+
 
   if (state.dragging === "drawingRect" && state.drawTemp) {
     state.drawTemp.end = { x: world.x, y: world.y };
@@ -2911,6 +2916,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
