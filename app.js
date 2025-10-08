@@ -1332,6 +1332,54 @@ el.canvas.addEventListener("mousedown", (e) => {
   const world = screenToWorld(px, py);
 
   // ------------------------------
+  // ★ 図形クリック検出（選択用）
+  // ------------------------------
+  function pickShape(px, py) {
+    const fr = rects().rect;
+
+    // 四角優先
+    for (let i = state.field.rectangles.length - 1; i >= 0; i--) {
+      const r = state.field.rectangles[i];
+      const x = fr.x + r.x * fr.w;
+      const y = fr.y + r.y * fr.h;
+      const w = r.w * fr.w;
+      const h = r.h * fr.h;
+      if (px >= x && px <= x + w && py >= y && py <= y + h) {
+        return { type: "rect", index: i };
+      }
+    }
+
+    // 線
+    for (let i = state.field.lines.length - 1; i >= 0; i--) {
+      const l = state.field.lines[i];
+      const x1 = fr.x + l.x1 * fr.w;
+      const y1 = fr.y + l.y1 * fr.h;
+      const x2 = fr.x + l.x2 * fr.w;
+      const y2 = fr.y + l.y2 * fr.h;
+      const dist =
+        Math.abs((y2 - y1) * px - (x2 - x1) * py + x2 * y1 - y2 * x1) /
+        Math.hypot(x2 - x1, y2 - y1);
+      if (dist < 8) return { type: "line", index: i };
+    }
+
+    // 半円
+    for (let i = state.field.halfCircles.length - 1; i >= 0; i--) {
+      const c = state.field.halfCircles[i];
+      const cx = fr.x + c.cx * fr.w;
+      const cy = fr.y + c.cy * fr.h;
+      const r = c.r * fr.w;
+      const dx = px - cx;
+      const dy = py - cy;
+      const dist = Math.hypot(dx, dy);
+      if (Math.abs(dist - r) < 10) {
+        return { type: "half", index: i };
+      }
+    }
+
+    return null;
+  }
+
+  // ------------------------------
   // ★ 0. グランド描写モード時の特別処理
   // ------------------------------
   if (state.editMode === "none") {
@@ -1344,9 +1392,7 @@ el.canvas.addEventListener("mousedown", (e) => {
       return;
     }
 
-    // 左クリックは子ども選択等を無効化して描写用クリックを通す
     console.log(`🖊 グランド描写クリック: x=${world.x.toFixed(3)}, y=${world.y.toFixed(3)}`);
-    // ※ここに今後グランド描写クリック処理を追加する場合はこの下に書く
     return;
   }
 
@@ -1384,27 +1430,30 @@ el.canvas.addEventListener("mousedown", (e) => {
   // ------------------------------
   if (e.button === 2) {
     e.preventDefault();
-    didRightDrag = false; // ★ パン判定リセット
-
-    if (state.multiSelect.selectedIds.length > 1) {
-      const menu = document.getElementById("contextMenu");
-      menu.style.left = e.pageX + "px";
-      menu.style.top = e.pageY + "px";
-      menu.style.display = "block";
-    } else {
-      panDrag = { sx: px, sy: py, ox: state.view.x, oy: state.view.y };
-    }
+    didRightDrag = false;
+    panDrag = { sx: px, sy: py, ox: state.view.x, oy: state.view.y };
     return;
   }
 
   // ------------------------------
-  // ③ グランド編集モードのクリック処理
+  // ③ グランド編集モード（線・四角・半円・移動含む）
   // ------------------------------
   const editableModes = ["markers", "circles", "lines", "rectangles", "halfCircles"];
   if (editableModes.includes(state.editMode)) {
     e.preventDefault();
 
-    // 線（lines）
+    // まず既存図形クリック判定
+    const hit = pickShape(px, py);
+    if (hit) {
+      state.selectedShape = hit;
+      console.log("🎯 図形選択:", hit);
+      state.dragging = { type: "shape", shapeType: hit.type, index: hit.index };
+      return;
+    } else {
+      state.selectedShape = null;
+    }
+
+    // 新規描写開始
     if (state.editMode === "lines") {
       state.drawTemp = {
         type: "line",
@@ -1416,7 +1465,6 @@ el.canvas.addEventListener("mousedown", (e) => {
       return;
     }
 
-    // 四角（rectangles）
     if (state.editMode === "rectangles") {
       state.drawTemp = {
         type: "rect",
@@ -1429,7 +1477,6 @@ el.canvas.addEventListener("mousedown", (e) => {
       return;
     }
 
-    // 半円（halfCircles）
     if (state.editMode === "halfCircles") {
       if (!state.tempHalfCircle) {
         state.tempHalfCircle = { cx: world.x, cy: world.y };
@@ -1473,6 +1520,19 @@ el.canvas.addEventListener("mousedown", (e) => {
       state.multiSelect.endX = world.x;
       state.multiSelect.endY = world.y;
     }
+  }
+});
+
+// Deleteキーで削除
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Delete" && state.selectedShape) {
+    const { type, index } = state.selectedShape;
+    if (type === "line") state.field.lines.splice(index, 1);
+    if (type === "rect") state.field.rectangles.splice(index, 1);
+    if (type === "half") state.field.halfCircles.splice(index, 1);
+    state.selectedShape = null;
+    draw();
+    flash("図形を削除しました");
   }
 });
 
@@ -2728,6 +2788,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
