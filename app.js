@@ -1739,7 +1739,7 @@ el.canvas.addEventListener("mousemove", (e) => {
   }
 
   // ------------------------------
-  // グランド編集：ドラッグ中プレビュー描画
+  // グランド編集：ドラッグ中プレビュー描画（ビュー変換リセット付き）
   // ------------------------------
   if (state.dragging === "drawingLine" && state.drawTemp) {
     state.drawTemp.end = { x: world.x, y: world.y };
@@ -1747,6 +1747,7 @@ el.canvas.addEventListener("mousemove", (e) => {
 
     const ctx2 = el.canvas.getContext("2d");
     ctx2.save();
+    ctx2.setTransform(1, 0, 0, 1, 0, 0); // ← transformリセット
 
     const fr = rects().rect;
     const x1 = fr.x + state.drawTemp.start.x * fr.w;
@@ -1771,6 +1772,7 @@ el.canvas.addEventListener("mousemove", (e) => {
 
     const ctx2 = el.canvas.getContext("2d");
     ctx2.save();
+    ctx2.setTransform(1, 0, 0, 1, 0, 0); // ← transformリセット
 
     const fr = rects().rect;
     const x1 = fr.x + state.drawTemp.start.x * fr.w;
@@ -1798,6 +1800,7 @@ el.canvas.addEventListener("mousemove", (e) => {
 
     const ctx2 = el.canvas.getContext("2d");
     ctx2.save();
+    ctx2.setTransform(1, 0, 0, 1, 0, 0); // ← transformリセット
 
     const fr = rects().rect;
     const cx = fr.x + state.tempHalfCircle.cx * fr.w;
@@ -1820,7 +1823,6 @@ el.canvas.addEventListener("mousemove", (e) => {
     ctx2.restore();
     return;
   }
-
 
   // ------------------------------
   // 回転中
@@ -2903,6 +2905,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
