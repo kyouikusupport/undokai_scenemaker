@@ -1788,10 +1788,10 @@ el.canvas.addEventListener("mousemove", (e) => {
     ctx2.setTransform(1, 0, 0, 1, 0, 0); // ← transformリセット
 
     const fr = rects().rect;
-    const x1 = fr.x + state.drawTemp.start.x * fr.w;
-    const y1 = fr.y + state.drawTemp.start.y * fr.h;
-    const x2 = fr.x + world.x * fr.w;
-    const y2 = fr.y + world.y * fr.h;
+    const x1 = fr.x + state.drawTemp.start.x;
+    const y1 = fr.y + state.drawTemp.start.y;
+    const x2 = fr.x + world.x;
+    const y2 = fr.y + world.y;
 
     const x = Math.min(x1, x2);
     const y = Math.min(y1, y2);
@@ -1816,10 +1816,10 @@ el.canvas.addEventListener("mousemove", (e) => {
     ctx2.setTransform(1, 0, 0, 1, 0, 0); // ← transformリセット
 
     const fr = rects().rect;
-    const cx = fr.x + state.tempHalfCircle.cx * fr.w;
-    const cy = fr.y + state.tempHalfCircle.cy * fr.h;
-    const sx = fr.x + state.tempHalfCircle.start.x * fr.w;
-    const sy = fr.y + state.tempHalfCircle.start.y * fr.h;
+    const cx = fr.x + state.tempHalfCircle.cx;
+    const cy = fr.y + state.tempHalfCircle.cy;
+    const sx = fr.x + state.tempHalfCircle.start.x;
+    const sy = fr.y + state.tempHalfCircle.start.y;
     const ex = fr.x + world.x * fr.w;
     const ey = fr.y + world.y * fr.h;
 
@@ -2919,6 +2919,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
