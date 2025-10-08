@@ -1331,24 +1331,22 @@ el.canvas.addEventListener("mousedown", (e) => {
   const py = e.clientY - rect.top;
   const world = screenToWorld(px, py);
 
-  // ------------------------------
-  // ★ 図形クリック検出（選択用）
-  // ------------------------------
+  // =============================
+  // 図形をクリック・ホバーで検出する関数
+  // =============================
   function pickShape(px, py) {
     const fr = rects().rect;
-
-    // 四角優先
+  
+    // 四角
     for (let i = state.field.rectangles.length - 1; i >= 0; i--) {
       const r = state.field.rectangles[i];
       const x = fr.x + r.x * fr.w;
       const y = fr.y + r.y * fr.h;
       const w = r.w * fr.w;
       const h = r.h * fr.h;
-      if (px >= x && px <= x + w && py >= y && py <= y + h) {
-        return { type: "rect", index: i };
-      }
+      if (px >= x && px <= x + w && py >= y && py <= y + h) return { type: "rect", index: i };
     }
-
+  
     // 線
     for (let i = state.field.lines.length - 1; i >= 0; i--) {
       const l = state.field.lines[i];
@@ -1361,7 +1359,7 @@ el.canvas.addEventListener("mousedown", (e) => {
         Math.hypot(x2 - x1, y2 - y1);
       if (dist < 8) return { type: "line", index: i };
     }
-
+  
     // 半円
     for (let i = state.field.halfCircles.length - 1; i >= 0; i--) {
       const c = state.field.halfCircles[i];
@@ -1371,9 +1369,7 @@ el.canvas.addEventListener("mousedown", (e) => {
       const dx = px - cx;
       const dy = py - cy;
       const dist = Math.hypot(dx, dy);
-      if (Math.abs(dist - r) < 10) {
-        return { type: "half", index: i };
-      }
+      if (Math.abs(dist - r) < 10) return { type: "half", index: i };
     }
 
     return null;
@@ -1436,24 +1432,25 @@ el.canvas.addEventListener("mousedown", (e) => {
   }
 
   // ------------------------------
-  // ③ グランド編集モード（線・四角・半円・移動含む）
+  // ③ グランド編集モード（図形選択＋描画）
   // ------------------------------
   const editableModes = ["markers", "circles", "lines", "rectangles", "halfCircles"];
   if (editableModes.includes(state.editMode)) {
     e.preventDefault();
 
-    // まず既存図形クリック判定
+    // --- 既存図形クリックを優先（選択・移動） ---
     const hit = pickShape(px, py);
     if (hit) {
       state.selectedShape = hit;
-      console.log("🎯 図形選択:", hit);
       state.dragging = { type: "shape", shapeType: hit.type, index: hit.index };
+      el.canvas.style.cursor = "grabbing";
+      console.log("🎯 図形選択:", hit);
       return;
     } else {
       state.selectedShape = null;
     }
 
-    // 新規描写開始
+    // --- 新規描画 ---
     if (state.editMode === "lines") {
       state.drawTemp = {
         type: "line",
@@ -1666,8 +1663,6 @@ window.addEventListener("mouseup", (e) => {
   panDrag = null;
 });
 
-
-
 el.canvas.addEventListener("mousemove", (e) => {
   lastMouseX = e.clientX;
   lastMouseY = e.clientY;
@@ -1676,6 +1671,16 @@ el.canvas.addEventListener("mousemove", (e) => {
   const px = e.clientX - rect.left;
   const py = e.clientY - rect.top;
   const world = screenToWorld(px, py);
+  
+  // === カーソルの形を変更（図形の上にあるとき） ===
+  if (state.editMode && state.editMode !== "none") {
+    const hit = pickShape(e.clientX - rect.left, e.clientY - rect.top);
+    if (hit) {
+      el.canvas.style.cursor = "pointer"; // 図形上 → 手の形
+    } else {
+      el.canvas.style.cursor = "default";
+    }
+  }
 
   // ------------------------------
   // グランド編集：ドラッグ中プレビュー描画
@@ -2788,6 +2793,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
