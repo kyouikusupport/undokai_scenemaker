@@ -1689,33 +1689,45 @@ window.addEventListener("mouseup", (e) => {
     return;
   }
 
+  // ------------------------------
+  // 半円：弧ドラッグ中（黒い弧を描写）
+  // ------------------------------
   if (state.dragging === "drawingHalfCircle" && state.tempHalfCircle?.start) {
-    const fr = rects().rect;
-    const center = state.tempHalfCircle;
-    const end = screenToWorld(lastMouseX, lastMouseY);
+    draw(); // 背景描画
 
-    const dx = end.x - center.cx;
-    const dy = end.y - center.cy;
-    const r = Math.sqrt(dx * dx + dy * dy);
+    const ctx2 = el.canvas.getContext("2d");
+    ctx2.save();
+    applyViewTransform();
 
-    const startAngle = Math.atan2(center.start.y - center.cy, center.start.x - center.cx);
-    const endAngle = Math.atan2(end.y - center.cy, end.x - center.cx);
+    const cx = state.tempHalfCircle.cx;
+    const cy = state.tempHalfCircle.cy;
+    const start = state.tempHalfCircle.start;
+    const dx = start.x - cx;
+    const dy = start.y - cy;
+    const r = Math.hypot(dx, dy);
+    const startAngle = Math.atan2(start.y - cy, start.x - cx);
+    const endAngle = Math.atan2(world.y - cy, world.x - cx);
 
-    state.field.halfCircles.push({
-      cx: (center.cx - fr.x) / fr.w,
-      cy: (center.cy - fr.y) / fr.h,
-      r: r / fr.w,
-      startAngle,
-      endAngle,
-      color: state.currentColor || "#000000"
-    });
+    // 灰色の円（下地）
+    ctx2.beginPath();
+    ctx2.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx2.strokeStyle = "rgba(128,128,128,0.3)";
+    ctx2.lineWidth = 1.2;
+    ctx2.setLineDash([4, 4]);
+    ctx2.stroke();
 
-    console.log("✅ 半円を追加:", state.field.halfCircles[state.field.halfCircles.length - 1]);
-    state.tempHalfCircle = null;
-    state.dragging = null;
-    draw();
+    // 黒い弧
+    ctx2.setLineDash([]);
+    ctx2.beginPath();
+    ctx2.arc(cx, cy, r, startAngle, endAngle);
+    ctx2.strokeStyle = "#000000";
+    ctx2.lineWidth = 2;
+    ctx2.stroke();
+
+    ctx2.restore();
     return;
   }
+
 
   // ------------------------------
   // 既存のマウスアップ処理（子ども選択・パンなど）
@@ -2958,6 +2970,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
