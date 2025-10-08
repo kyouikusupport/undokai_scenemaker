@@ -1511,6 +1511,7 @@ el.canvas.addEventListener("mousedown", (e) => {
         color: state.currentColor || "#000000"
       };
       state.dragging = "drawingLine";
+      console.log(`🟢 [start draw line] world=(${world.x.toFixed(2)}, ${world.y.toFixed(2)})`);
       return;
     }
 
@@ -1523,6 +1524,7 @@ el.canvas.addEventListener("mousedown", (e) => {
         color: state.currentColor || "#000000"
       };
       state.dragging = "drawingRect";
+      console.log(`🟢 [start draw rect] world=(${world.x.toFixed(2)}, ${world.y.toFixed(2)})`);
       return;
     }
 
@@ -1530,9 +1532,11 @@ el.canvas.addEventListener("mousedown", (e) => {
       if (!state.tempHalfCircle) {
         state.tempHalfCircle = { cx: world.x, cy: world.y };
         flash("半円の中心を設定しました。弧の始点をクリックしてドラッグしてください。");
+        console.log(`🟢 [start draw rect] world=(${world.x.toFixed(2)}, ${world.y.toFixed(2)})`);
       } else {
         state.tempHalfCircle.start = { x: world.x, y: world.y };
         state.dragging = "drawingHalfCircle";
+        console.log(`🟢 [start draw rect] world=(${world.x.toFixed(2)}, ${world.y.toFixed(2)})`);
       }
       return;
     }
@@ -1754,6 +1758,7 @@ el.canvas.addEventListener("mousemove", (e) => {
     const y1 = fr.y + state.drawTemp.start.y * fr.h;
     const x2 = fr.x + world.x * fr.w;
     const y2 = fr.y + world.y * fr.h;
+    console.log(`✏️ [drawingLine] start=(${sx.toFixed(1)},${sy.toFixed(1)}) end=(${ex.toFixed(1)},${ey.toFixed(1)})`);
 
     ctx2.beginPath();
     ctx2.moveTo(x1, y1);
@@ -1932,6 +1937,7 @@ window.addEventListener("mouseup", (e) => {
   // ------------------------------
   if (state.dragging === "drawingLine" && state.drawTemp) {
     const { start, end, color } = state.drawTemp;
+    console.log(`🧩 [finish line] worldStart=(${start.x.toFixed(2)},${start.y.toFixed(2)}) worldEnd=(${end.x.toFixed(2)},${end.y.toFixed(2)})`);
     const fr = rects().rect;
 
     // rect基準に正規化して保存
@@ -2905,6 +2911,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
