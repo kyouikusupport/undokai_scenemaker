@@ -34,8 +34,13 @@ button:disabled { opacity:0.6; cursor:not-allowed; }
 
 main { padding:16px; }
 .canvas-wrap {
-  background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden; /* はみ出し防止 */
+  width: 100%;
 }
+
 .canvas-toolbar {
   display:flex; gap:8px; align-items:center; padding:8px; border-bottom:1px solid var(--border); background:#fafbff;
 }
@@ -277,6 +282,7 @@ td[contenteditable="true"] { background:#fff; min-width: 40px; }
   background-color: #6c63ff; /* 紫系 */
   color: #fff;
 }
+
 
 
 
