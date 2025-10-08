@@ -1325,6 +1325,55 @@ let panDrag = null;
 let lastMouseX = 0, lastMouseY = 0;
 let didRightDrag = false; // ★ 右ドラッグ判定フラグ
 
+// ------------------------------
+// 図形クリック検出（線・四角・半円）
+// ------------------------------
+function pickShape(px, py) {
+  const fr = rects().rect;
+
+  // === 四角形 ===
+  for (let i = state.field.rectangles.length - 1; i >= 0; i--) {
+    const r = state.field.rectangles[i];
+    const x = fr.x + r.x * fr.w;
+    const y = fr.y + r.y * fr.h;
+    const w = r.w * fr.w;
+    const h = r.h * fr.h;
+    if (px >= x && px <= x + w && py >= y && py <= y + h) {
+      return { type: "rect", index: i };
+    }
+  }
+
+  // === 線 ===
+  for (let i = state.field.lines.length - 1; i >= 0; i--) {
+    const l = state.field.lines[i];
+    const x1 = fr.x + l.x1 * fr.w;
+    const y1 = fr.y + l.y1 * fr.h;
+    const x2 = fr.x + l.x2 * fr.w;
+    const y2 = fr.y + l.y2 * fr.h;
+    const dist = Math.abs((y2 - y1) * px - (x2 - x1) * py + x2 * y1 - y2 * x1) / Math.hypot(x2 - x1, y2 - y1);
+    if (dist < 8) {
+      return { type: "line", index: i };
+    }
+  }
+
+  // === 半円 ===
+  for (let i = state.field.halfCircles.length - 1; i >= 0; i--) {
+    const c = state.field.halfCircles[i];
+    const cx = fr.x + c.cx * fr.w;
+    const cy = fr.y + c.cy * fr.h;
+    const r = c.r * fr.w;
+    const dx = px - cx;
+    const dy = py - cy;
+    const dist = Math.hypot(dx, dy);
+    if (Math.abs(dist - r) < 10) {
+      return { type: "half", index: i };
+    }
+  }
+
+  return null;
+}
+
+
 el.canvas.addEventListener("mousedown", (e) => {
   const rect = el.canvas.getBoundingClientRect();
   const px = e.clientX - rect.left;
@@ -2846,6 +2895,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
