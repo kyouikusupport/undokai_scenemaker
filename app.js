@@ -1743,27 +1743,29 @@ el.canvas.addEventListener("mousemove", (e) => {
   }
 
   // ------------------------------
-  // グランド編集：ドラッグ中プレビュー描画（ズレ補正付き）
+  // グランド編集：ドラッグ中プレビュー描画（グランド保持版）
   // ------------------------------
   if (state.dragging === "drawingLine" && state.drawTemp) {
-    // 現在のマウス位置を更新
     state.drawTemp.end = { x: world.x, y: world.y };
-
-    // 通常描画
-    draw();
 
     const ctx2 = el.canvas.getContext("2d");
     ctx2.save();
 
-    // ✅ ビュー変換を適用（draw()と同じ座標系で描画）
+    // ✅ ビュー変換を適用
     applyViewTransform();
 
+    // ✅ 前回プレビュー線を消去（キャンバス全体をclearしない）
+    ctx2.clearRect(0, 0, el.canvas.width, el.canvas.height);
+
+    // ✅ グランドを一度再描画
+    draw();
+
+    // ✅ プレビュー線を上に重ね描き
     const x1 = state.drawTemp.start.x;
     const y1 = state.drawTemp.start.y;
     const x2 = state.drawTemp.end.x;
     const y2 = state.drawTemp.end.y;
 
-    // デバッグログ
     console.log(`✏️ [drawingLine] start=(${x1.toFixed(1)}, ${y1.toFixed(1)}) end=(${x2.toFixed(1)}, ${y2.toFixed(1)})`);
 
     ctx2.beginPath();
@@ -1776,8 +1778,6 @@ el.canvas.addEventListener("mousemove", (e) => {
     ctx2.restore();
     return;
   }
-
-
 
   if (state.dragging === "drawingRect" && state.drawTemp) {
     state.drawTemp.end = { x: world.x, y: world.y };
@@ -2919,6 +2919,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
