@@ -1528,18 +1528,33 @@ el.canvas.addEventListener("mousedown", (e) => {
       return;
     }
 
-    if (state.editMode === "halfCircles") {
-      if (!state.tempHalfCircle) {
-        state.tempHalfCircle = { cx: world.x, cy: world.y };
-        flash("半円の中心を設定しました。弧の始点をクリックしてドラッグしてください。");
-        console.log(`🟢 [start draw rect] world=(${world.x.toFixed(2)}, ${world.y.toFixed(2)})`);
-      } else {
-        state.tempHalfCircle.start = { x: world.x, y: world.y };
-        state.dragging = "drawingHalfCircle";
-        console.log(`🟢 [start draw rect] world=(${world.x.toFixed(2)}, ${world.y.toFixed(2)})`);
-      }
+    // ------------------------------
+    // 半円：中心設定後、ドラッグ前（灰色円プレビュー）
+    // ------------------------------
+    if (state.editMode === "halfCircles" && state.tempHalfCircle && !state.tempHalfCircle.start) {
+      draw(); // 背景再描画
+
+      const ctx2 = el.canvas.getContext("2d");
+      ctx2.save();
+      applyViewTransform();
+
+      const cx = state.tempHalfCircle.cx;
+      const cy = state.tempHalfCircle.cy;
+      const dx = world.x - cx;
+      const dy = world.y - cy;
+      const r = Math.hypot(dx, dy);
+
+      ctx2.beginPath();
+      ctx2.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx2.strokeStyle = "rgba(128,128,128,0.6)";
+      ctx2.lineWidth = 1.5;
+      ctx2.setLineDash([4, 4]);
+      ctx2.stroke();
+
+      ctx2.restore();
       return;
     }
+
   }
 
   // ------------------------------
@@ -2943,6 +2958,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
