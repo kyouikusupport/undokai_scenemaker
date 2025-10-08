@@ -1686,30 +1686,44 @@ el.canvas.addEventListener("mousemove", (e) => {
   // グランド編集：ドラッグ中プレビュー描画
   // ------------------------------
   if (state.dragging === "drawingLine" && state.drawTemp) {
+    // 現在のマウス位置を保存
     state.drawTemp.end = { x: world.x, y: world.y };
+
+    // 一度通常描画
     draw();
 
+    // プレビュー線描画
     const ctx2 = el.canvas.getContext("2d");
+    ctx2.save();
+
+    // devicePixelRatio補正
+    const dpr = window.devicePixelRatio || 1;
+    ctx2.scale(dpr, dpr);
+
+    // rect変換（キャンバス内位置に変換）
     const p1 = n2pRect(state.drawTemp.start.x, state.drawTemp.start.y);
     const p2 = n2pRect(world.x, world.y);
 
-    ctx2.save();
     ctx2.beginPath();
     ctx2.moveTo(p1.x, p1.y);
     ctx2.lineTo(p2.x, p2.y);
-    ctx2.strokeStyle = state.drawTemp.color;
+    ctx2.strokeStyle = state.drawTemp.color || "#000000";
     ctx2.lineWidth = 2;
     ctx2.stroke();
     ctx2.restore();
     return;
   }
 
-
   if (state.dragging === "drawingRect" && state.drawTemp) {
     state.drawTemp.end = { x: world.x, y: world.y };
     draw();
 
     const ctx2 = el.canvas.getContext("2d");
+    ctx2.save();
+
+    const dpr = window.devicePixelRatio || 1;
+    ctx2.scale(dpr, dpr);
+
     const p1 = n2pRect(state.drawTemp.start.x, state.drawTemp.start.y);
     const p2 = n2pRect(world.x, world.y);
     const x = Math.min(p1.x, p2.x);
@@ -1717,20 +1731,23 @@ el.canvas.addEventListener("mousemove", (e) => {
     const w = Math.abs(p2.x - p1.x);
     const h = Math.abs(p2.y - p1.y);
 
-    ctx2.save();
     ctx2.beginPath();
     ctx2.rect(x, y, w, h);
-    ctx2.strokeStyle = state.drawTemp.color;
+    ctx2.strokeStyle = state.drawTemp.color || "#000000";
     ctx2.lineWidth = 2;
     ctx2.stroke();
     ctx2.restore();
     return;
   }
 
-
   if (state.dragging === "drawingHalfCircle" && state.tempHalfCircle?.start) {
     draw();
+
     const ctx2 = el.canvas.getContext("2d");
+    ctx2.save();
+
+    const dpr = window.devicePixelRatio || 1;
+    ctx2.scale(dpr, dpr);
 
     const pCenter = n2pRect(state.tempHalfCircle.cx, state.tempHalfCircle.cy);
     const pStart = n2pRect(state.tempHalfCircle.start.x, state.tempHalfCircle.start.y);
@@ -1740,7 +1757,6 @@ el.canvas.addEventListener("mousemove", (e) => {
     const startAngle = Math.atan2(pStart.y - pCenter.y, pStart.x - pCenter.x);
     const endAngle = Math.atan2(pEnd.y - pCenter.y, pEnd.x - pCenter.x);
 
-    ctx2.save();
     ctx2.beginPath();
     ctx2.arc(pCenter.x, pCenter.y, r, startAngle, endAngle);
     ctx2.strokeStyle = "#000000";
@@ -2830,6 +2846,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
