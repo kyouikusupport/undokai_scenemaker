@@ -1322,7 +1322,8 @@ function pickStudent(px,py){
 }
 
 let panDrag = null;
-let lastMouseX=0, lastMouseY=0;
+let lastMouseX = 0, lastMouseY = 0;
+let didRightDrag = false; // ★ 右ドラッグ判定フラグ
 
 el.canvas.addEventListener("mousedown", (e) => {
   const rect = el.canvas.getBoundingClientRect();
@@ -1360,10 +1361,12 @@ el.canvas.addEventListener("mousedown", (e) => {
   }
 
   // ------------------------------
-  // ② 右クリック処理（共通）
+  // ② 右クリック処理（パン or コンテキストメニュー）
   // ------------------------------
   if (e.button === 2) {
     e.preventDefault();
+    didRightDrag = false; // ★ パン判定リセット
+
     if (state.multiSelect.selectedIds.length > 1) {
       const menu = document.getElementById("contextMenu");
       menu.style.left = e.pageX + "px";
@@ -1410,11 +1413,9 @@ el.canvas.addEventListener("mousedown", (e) => {
     // 半円（halfCircles）
     if (state.editMode === "halfCircles") {
       if (!state.tempHalfCircle) {
-        // 最初のクリック：中心
         state.tempHalfCircle = { cx: world.x, cy: world.y };
         flash("半円の中心を設定しました。弧の始点をクリックしてドラッグしてください。");
       } else {
-        // 2回目：弧の描画開始
         state.tempHalfCircle.start = { x: world.x, y: world.y };
         state.dragging = "drawingHalfCircle";
       }
@@ -1455,6 +1456,48 @@ el.canvas.addEventListener("mousedown", (e) => {
     }
   }
 });
+
+// ------------------------------
+// ★ 右クリックメニュー制御
+// ------------------------------
+el.canvas.addEventListener("contextmenu", (e) => {
+  if (didRightDrag) {
+    // パン操作後の右クリックメニューはブロック
+    e.preventDefault();
+    didRightDrag = false;
+    return;
+  }
+
+  // 通常の右クリックのみ有効
+  e.preventDefault();
+  if (state.multiSelect.selectedIds.length > 1 && !state.rotate.active) {
+    const menu = document.getElementById("contextMenu");
+    menu.style.left = e.pageX + "px";
+    menu.style.top = e.pageY + "px";
+    menu.style.display = "block";
+  }
+});
+
+// ------------------------------
+// ★ マウス移動（パン中の処理を補強）
+// ------------------------------
+el.canvas.addEventListener("mousemove", (e) => {
+  if (panDrag && e.buttons === 2) {
+    const dx = e.clientX - panDrag.sx;
+    const dy = e.clientY - panDrag.sy;
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) didRightDrag = true; // ★ ドラッグ検知
+    state.view.x = panDrag.ox + dx;
+    state.view.y = panDrag.oy + dy;
+    draw();
+  }
+});
+
+window.addEventListener("mouseup", (e) => {
+  if (e.button === 2) {
+    panDrag = null;
+  }
+});
+
 
 el.canvas.addEventListener("mousemove", (e) => {
   lastMouseX = e.clientX;
@@ -2576,6 +2619,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
