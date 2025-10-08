@@ -2039,8 +2039,10 @@ window.addEventListener("mouseup", (e) => {
     return;
   }
 
+  // ------------------------------
+  // 半円：マウスアップで確定（灰色円を消去）
+  // ------------------------------
   if (state.dragging === "drawingHalfCircle" && state.tempHalfCircle?.start) {
-    const fr = rects().rect;
     const cx = state.tempHalfCircle.cx;
     const cy = state.tempHalfCircle.cy;
     const start = state.tempHalfCircle.start;
@@ -2050,7 +2052,8 @@ window.addEventListener("mouseup", (e) => {
     const startAngle = Math.atan2(start.y - cy, start.x - cx);
     const endAngle = Math.atan2(world.y - cy, world.x - cx);
 
-    // rect基準に正規化して保存
+    // ✅ rects() 基準に正規化して保存（既存仕様を維持）
+    const fr = rects().rect;
     state.field.halfCircles.push({
       cx: (cx - fr.x) / fr.w,
       cy: (cy - fr.y) / fr.h,
@@ -2060,11 +2063,16 @@ window.addEventListener("mouseup", (e) => {
       color: "#000000"
     });
 
+    // ✅ 状態をリセット（灰色円を消す）
     state.tempHalfCircle = null;
     state.dragging = null;
+
+    // ✅ 再描画して確定
     draw();
+    flash("半円を追加しました");
     return;
   }
+
 
 
   // ------------------------------
@@ -2970,6 +2978,7 @@ function getDeviceScale() {
   if (w < 768) return 0.75;  // タブレット
   return 1.0;                // PC
 }
+
 
 
 
